@@ -2289,39 +2289,35 @@ function addHeaderResizeGrips(){
 
 window.addEventListener('resize', ()=>{ try{  }catch(e){} });
 
-// Initialize meta format button
+// Initialize on DOM load
 document.addEventListener('DOMContentLoaded', () => {
-  const metaFormatBtn = document.getElementById('metaFormatBtn');
-  const metaDisplay = document.getElementById('metaDisplay');
-  if (metaFormatBtn && metaDisplay) {
-    // Create a dummy tr element to store meta formatting
-    const metaFormatElement = document.createElement('div');
-    metaFormatElement.id = 'metaFormatData';
-    metaFormatElement.style.display = 'none';
-    document.body.appendChild(metaFormatElement);
-    
-    buildFormattingPopover(metaFormatBtn, metaFormatElement, 'meta');
-  }
   
   // Theme toggle
   const themeToggle = document.getElementById('themeToggle');
   if (themeToggle) {
+    const themeText = themeToggle.querySelector('.theme-text');
+    
     // Load saved theme
     const savedTheme = localStorage.getItem('scheduler-theme') || 'dark';
     if (savedTheme === 'light') {
       document.body.classList.add('light-theme');
+      if (themeText) themeText.textContent = 'DARK';
+    } else {
+      if (themeText) themeText.textContent = 'LIGHT';
     }
     
     themeToggle.addEventListener('click', () => {
       document.body.classList.toggle('light-theme');
       const isLight = document.body.classList.contains('light-theme');
       localStorage.setItem('scheduler-theme', isLight ? 'light' : 'dark');
+      if (themeText) {
+        themeText.textContent = isLight ? 'DARK' : 'LIGHT';
+      }
     });
   }
   
   // Print header functionality
   const printHeaderText = document.getElementById('printHeaderText');
-  const printHeaderFormat = document.getElementById('printHeaderFormat');
   
   if (printHeaderText) {
     // Load saved print header
@@ -2332,16 +2328,6 @@ document.addEventListener('DOMContentLoaded', () => {
     printHeaderText.addEventListener('input', () => {
       localStorage.setItem('scheduler-print-header', printHeaderText.value);
     });
-  }
-  
-  if (printHeaderFormat && printHeaderText) {
-    // Create format storage element
-    const printHeaderFormatData = document.createElement('div');
-    printHeaderFormatData.id = 'printHeaderFormatData';
-    printHeaderFormatData.style.display = 'none';
-    document.body.appendChild(printHeaderFormatData);
-    
-    buildFormattingPopover(printHeaderFormat, printHeaderFormatData, 'print-header');
   }
 });
 

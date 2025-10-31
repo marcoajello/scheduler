@@ -83,8 +83,10 @@ body.light-theme .uploadBox {
 }
 
 .theme-toggle {
-  font-size: 24px;
-  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 8px 14px;
   background: transparent;
   border: 1px solid var(--border);
   cursor: pointer;
@@ -100,9 +102,11 @@ body.light-theme .uploadBox {
   border-color: var(--accent);
 }
 
-.theme-icon {
-  font-size: 20px;
+.theme-text {
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
+  letter-spacing: 0.5px;
 }
 
 /* Print header section */
