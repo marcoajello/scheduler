@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 Merged Scheduler - Start Here</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .hero {
+      background: white;
+      border-radius: 20px;
+      padding: 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      color: #1e3c72;
+      margin-bottom: 1rem;
+      font-weight: 800;
+    }
+    .hero p {
+      font-size: 1.3rem;
+      color: #666;
+      margin-bottom: 2rem;
+    }
+    .big-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem 3rem;
+      text-decoration: none;
+      border-radius: 50px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      transition: all 0.3s ease;
+      margin: 1rem;
+    }
+    .big-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    }
+    .card h2 {
+      color: #1e3c72;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+    .card p {
+      color: #666;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .card ul li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
+    }
+    .card ul li:last-child { border: none; }
+    .card a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .card a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      background: #28a745;
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-left: 0.5rem;
+    }
+    .badge-blue {
+      background: #667eea;
+    }
+    .badge-purple {
+      background: #764ba2;
+    }
+    .feature-box {
+      background: #f8f9ff;
+      padding: 1.5rem;
+      border-radius: 12px;
+      margin: 1.5rem 0;
+    }
+    .feature-box h3 {
+      color: #667eea;
+      margin-bottom: 1rem;
+    }
+    .feature-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .feature-item {
+      padding: 0.5rem;
+      background: white;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 768px) {
+      .feature-list { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; }
+      .big-button { font-size: 1.2rem; padding: 1rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>🎬 Merged Scheduler</h1>
+      <p>v10.4 Interactive UI + v10.9 Report Designer</p>
+      <a href="./index.html" class="big-button">
+        🚀 Open The App
+      </a>
+      <div style="margin-top: 2rem; padding: 1rem; background: #d4edda; border-radius: 12px;">
+        <strong style="color: #28a745; font-size: 1.1rem;">✅ Best of Both Worlds!</strong>
+        <p style="color: #666; margin-top: 0.5rem; font-size: 0.95rem;">
+          Full interactive schedule editor + Professional report designer in one app
+        </p>
+      </div>
+    </div>
+
+    <div class="feature-box">
+      <h3>📦 What's Included</h3>
+      <div class="feature-list">
+        <div class="feature-item">⋮ Drag & drop rows</div>
+        <div class="feature-item">↔ Resize columns</div>
+        <div class="feature-item">✎ Format buttons</div>
+        <div class="feature-item">🎨 Color pickers</div>
+        <div class="feature-item">📅 Multi-day tabs</div>
+        <div class="feature-item">+ FAB menu</div>
+        <div class="feature-item">🖼️ Report designer</div>
+        <div class="feature-item">🖨️ Print preview</div>
+      </div>
+    </div>
+    
+    <div class="grid">
+      <div class="card">
+        <h2>⚡ Quick Start</h2>
+        <p>Get started in 30 seconds!</p>
+        <ul>
+          <li><a href="./index.html">Open the app</a> <span class="badge">START</span></li>
+          <li><a href="./QUICK-START.md">Quick Start Guide</a></li>
+          <li><a href="./TESTING-CHECKLIST.md">Test Features</a></li>
+        </ul>
+      </div>
+      
+      <div class="card">
+        <h2>📖 Documentation</h2>
+        <p>Learn what you can do</p>
+        <ul>
+          <li><a href="./README.md">Full README</a></li>
+          <li><a href="./VISUAL-COMPARISON.md">What's Different</a></li>
+          <li><a href="./TESTING-CHECKLIST.md">Testing Guide</a></li>
+        </ul>
+      </div>
+      
+      <div class="card">
+        <h2>🎯 Key Features</h2>
+        <p>From v10.4 + v10.9</p>
+        <div style="margin-top: 1rem;">
+          <strong style="color: #667eea;">v10.4 Features:</strong>
+          <ul style="font-size: 0.9rem; margin-top: 0.5rem;">
+            <li>• Interactive drag/drop</li>
+            <li>• Column resizing</li>
+            <li>• Rich formatting</li>
+            <li>• Multi-day support</li>
+          </ul>
+          <strong style="color: #764ba2; display: block; margin-top: 1rem;">v10.9 Features:</strong>
+          <ul style="font-size: 0.9rem; margin-top: 0.5rem;">
+            <li>• Report designer</li>
+            <li>• Real data display</li>
+            <li>• Print preview</li>
+            <li>• Multiple layouts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="grid">
+      <div class="card">
+        <h2>🎬 For Filmmakers</h2>
+        <p>Perfect for production</p>
+        <ul style="margin-top: 1rem;">
+          <li>✓ Multi-day shoot schedules</li>
+          <li>✓ Professional call sheets</li>
+          <li>✓ Crew schedules</li>
+          <li>✓ Custom layouts</li>
+          <li>✓ Print-ready output</li>
+        </ul>
+      </div>
+      
+      <div class="card">
+        <h2>💡 Tips</h2>
+        <p>Get the most out of it</p>
+        <ul style="margin-top: 1rem;">
+          <li>• Drag ⋮ handles to reorder</li>
+          <li>• Click ✎ to format text</li>
+          <li>• Use + FAB for quick add</li>
+          <li>• Create multiple layouts</li>
+          <li>• Save .json backups</li>
+        </ul>
+      </div>
+      
+      <div class="card">
+        <h2>🔒 Privacy</h2>
+        <p>Your data stays local</p>
+        <ul style="margin-top: 1rem;">
+          <li>✓ 100% local app</li>
+          <li>✓ No server required</li>
+          <li>✓ No data sent anywhere</li>
+          <li>✓ Browser storage only</li>
+          <li>✓ Offline capable</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div style="background: white; border-radius: 16px; padding: 2rem; margin-top: 2rem; text-align: center;">
+      <h2 style="color: #1e3c72; margin-bottom: 1rem;">🚀 Ready to Start?</h2>
+      <p style="color: #666; margin-bottom: 1.5rem;">
+        Click the button below to open the full application with sample data
+      </p>
+      <a href="./index.html" class="big-button">
+        Launch Scheduler
+      </a>
+      <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #eee;">
+        <p style="color: #888; font-size: 0.9rem;">
+          <strong>Files included:</strong> index.html • script.js (116 KB) • report-designer-enhanced.js (37 KB) • styles.css (26 KB)
+        </p>
+        <p style="color: #888; font-size: 0.9rem; margin-top: 0.5rem;">
+          <strong>Total size:</strong> ~180 KB • <strong>Browser:</strong> Chrome, Firefox, Safari, Edge
+        </p>
+      </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem; color: white; opacity: 0.8;">
+      <p>Merged v10.4 + v10.9 • October 29, 2025</p>
+      <p style="margin-top: 0.5rem; font-size: 0.9rem;">
+        Interactive scheduler meets professional report designer
+      </p>
+    </div>
+  </div>
+</body>
+</html>

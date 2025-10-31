@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Script Load Test</title>
+</head>
+<body>
+  <h1>Testing Script Loading</h1>
+  <p>Open console (F12) and check for logs.</p>
+  
+  <h2>Expected Logs:</h2>
+  <ol>
+    <li>=== REPORT DESIGNER SCRIPT LOADING ===</li>
+    <li>=== REPORT DESIGNER IIFE EXECUTING ===</li>
+    <li>=== REPORT DESIGNER EXPORT COMPLETE ===</li>
+    <li>=== DOCUMENT READY STATE: ...</li>
+    <li>=== DOM ALREADY READY, CALLING INIT IMMEDIATELY ===</li>
+    <li>[Report Designer] Init starting...</li>
+    <li>Report Designer Enhanced initialized</li>
+    <li>=== REPORT DESIGNER IIFE COMPLETE ===</li>
+  </ol>
+  
+  <h2>Test Results:</h2>
+  <div id="results"></div>
+  
+  <script>
+    console.log('=== TEST PAGE SCRIPT STARTING ===');
+    
+    window.getCurrentDay = function() {
+      return {
+        rows: [],
+        date: '2025-10-29',
+        dow: 'Wednesday',
+        dayNumber: 1
+      };
+    };
+    
+    window.getProjectMeta = function() {
+      return {
+        title: 'Test',
+        version: '1.0',
+        date: '2025-10-29'
+      };
+    };
+    
+    window.getDays = function() {
+      return [window.getCurrentDay()];
+    };
+    
+    console.log('=== DATA FUNCTIONS DEFINED ===');
+  </script>
+  
+  <script src="./merged_scheduler/report-designer-enhanced.js"></script>
+  
+  <script>
+    console.log('=== AFTER DESIGNER SCRIPT ===');
+    console.log('window.ReportDesigner exists?', !!window.ReportDesigner);
+    
+    if (window.ReportDesigner) {
+      document.getElementById('results').innerHTML = '<p style="color: green;">✅ Script loaded successfully!</p>';
+    } else {
+      document.getElementById('results').innerHTML = '<p style="color: red;">❌ Script did not load or export</p>';
+    }
+  </script>
+</body>
+</html>

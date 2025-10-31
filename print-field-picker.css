@@ -1,0 +1,441 @@
+/* ====================================================
+   PRINT FIELD PICKER STYLES
+   ==================================================== */
+
+/* Hide any report designer/generator UI */
+#designerPanel,
+.designer,
+.designer-workspace,
+.designer-canvas,
+.module-palette,
+.module-properties,
+.report-preview-root,
+input#psUseDesigner,
+#rdPrintRoot,
+.designer-print-root {
+  display: none !important;
+}
+
+/* Field Picker Panel */
+.print-field-picker {
+  background: var(--card-bg, #1a1a1a);
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.print-field-picker h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: var(--text, #fff);
+  font-weight: 600;
+}
+
+.field-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.field-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg, #0a0a0a);
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.field-picker-item:hover {
+  background: var(--hover-bg, #252525);
+  border-color: var(--accent, #5aa0ff);
+}
+
+.field-picker-item input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.field-picker-item label {
+  cursor: pointer;
+  margin: 0;
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text, #fff);
+}
+
+.field-picker-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border, #333);
+}
+
+.field-picker-actions button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.field-picker-hint {
+  color: var(--muted, #888);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* ====================================================
+   PRINT-SPECIFIC STYLES - HIDE ALL UI ELEMENTS
+   ==================================================== */
+
+@media print {
+  /* Hide ALL interactive controls and UI elements */
+  .controls,
+  .palette,
+  .colpanel,
+  .printpanel,
+  .print-field-picker,
+  .designer,
+  .foot,
+  .fab-container,
+  .day-tabs-bar,
+  button,
+  input[type="color"],
+  .col-resize-grip,
+  .actions,
+  .ghost,
+  .formatBtn {
+    display: none !important;
+  }
+  
+  /* Hide all meta input fields and labels */
+  .meta .row,
+  .meta label,
+  .meta input,
+  .meta .of-label,
+  #metaFormatBtn,
+  .print-header-section {
+    display: none !important;
+  }
+  
+  /* Keep only metaDisplay and make it flexible */
+  .meta {
+    padding: 12px 16px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  #metaDisplay {
+    display: block !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+  
+  /* Hide drag handle column */
+  td[data-key="drag"],
+  th[data-key="drag"],
+  td[data-key="actions"],
+  th[data-key="actions"],
+  th.fixed-right {
+    display: none !important;
+  }
+  
+  /* Hide anchor/call time controls in print */
+  .anchorRow,
+  .anchorMode,
+  .anchorEvent,
+  .addSubEv,
+  .subControls,
+  label:has(+ .anchorMode) {
+    display: none !important;
+  }
+  
+  /* Hide format buttons */
+  .formatBtn,
+  .ghost {
+    display: none !important;
+  }
+  
+  /* Force images to be full thumbnails (not cropped) and 3 across */
+  .uploadBox .u-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  
+  .uploadBox .u-item {
+    position: relative !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    max-height: 100px !important; /* Reduced from 200px */
+  }
+  
+  .uploadBox .u-thumb,
+  .uploadBox img,
+  .uploadBox video {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100px !important; /* Reduced from 200px */
+    object-fit: contain !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+  }
+  
+  /* Make sure upload boxes take full width */
+  .uploadBox {
+    width: 100% !important;
+  }
+  
+  /* Override media size settings to always use full width */
+  body.media-s .uploadBox .u-thumb,
+  body.media-m .uploadBox .u-thumb,
+  body.media-l .uploadBox .u-thumb {
+    width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* Hide upload controls */
+  .uploadBox .u-actions,
+  .uploadBox .u-del,
+  .uploadBox .u-add {
+    display: none !important;
+  }
+  
+  /* Remove all interactive button styles */
+  input,
+  select,
+  textarea,
+  button {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+  
+  /* Hide minute adjustment arrows in time fields */
+  .tCell .arrows,
+  .dur-arrows,
+  .time-arrows,
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+  
+  /* Hide color picker icons */
+  .bgA,
+  .fgA,
+  .colorBtn,
+  button[title*="color"],
+  button[title*="Color"],
+  input[type="color"] {
+    display: none !important;
+  }
+  
+  /* Remove borders and make inputs look like plain text */
+  input[type="text"],
+  input[type="time"],
+  input[type="number"],
+  textarea,
+  select {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    color: inherit !important;
+  }
+  
+  /* Force all text elements to use row foreground color */
+  tbody tr,
+  tbody tr td,
+  tbody tr input,
+  tbody tr textarea,
+  tbody tr select,
+  tbody tr .title,
+  tbody tr .titleWrap,
+  tbody tr .tCell,
+  tbody tr .cc-input {
+    color: var(--row-fg, var(--text)) !important;
+  }
+  
+  /* Sub-schedule text colors */
+  tr.subheader,
+  tr.subheader td,
+  tr.subheader input,
+  tr.subheader textarea,
+  tr.subheader .title {
+    color: var(--sub-fg, var(--text)) !important;
+  }
+  
+  tr.subchild,
+  tr.subchild td,
+  tr.subchild input,
+  tr.subchild textarea,
+  tr.subchild .title {
+    color: var(--subchild-fg, var(--text)) !important;
+  }
+  
+  /* Hide column selector/manager icons */
+  .col-toggle,
+  .col-drag,
+  .col-delete {
+    display: none !important;
+  }
+  
+  /* Clean table appearance - show only data */
+  .schedule {
+    border: none;
+    box-shadow: none;
+    width: 100%;
+  }
+  
+  /* Page break control - keep rows together */
+  tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  tbody tr.row {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Keep sub-schedules together */
+  tr.subheader {
+    page-break-before: auto;
+    page-break-after: avoid !important;
+    break-before: auto;
+    break-after: avoid !important;
+  }
+  
+  tr.subchild {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Match header width to table */
+  .meta {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Dynamic column hiding based on print selections */
+  /* These classes are added dynamically by JavaScript */
+  .print-hide-col-idx th[data-key="idx"],
+  .print-hide-col-idx td[data-key="idx"] {
+    display: none !important;
+  }
+  
+  .print-hide-col-start th[data-key="start"],
+  .print-hide-col-start td[data-key="start"] {
+    display: none !important;
+  }
+  
+  .print-hide-col-end th[data-key="end"],
+  .print-hide-col-end td[data-key="end"] {
+    display: none !important;
+  }
+  
+  .print-hide-col-duration th[data-key="duration"],
+  .print-hide-col-duration td[data-key="duration"] {
+    display: none !important;
+  }
+  
+  .print-hide-col-type th[data-key="type"],
+  .print-hide-col-type td[data-key="type"] {
+    display: none !important;
+  }
+  
+  .print-hide-col-title th[data-key="title"],
+  .print-hide-col-title td[data-key="title"] {
+    display: none !important;
+  }
+  
+  /* Hide custom columns dynamically */
+  /* JavaScript will add classes like .print-hide-col-c_text for custom columns */
+  [class*="print-hide-col-c_"] {
+    /* Individual custom column classes will be generated */
+  }
+  
+  /* Hide meta section if needed */
+  body.print-hide-meta #metaSection {
+    display: none !important;
+  }
+  
+  /* Clean page styling */
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  
+  thead th {
+    background: #222 !important;
+    color: #fff !important;
+  }
+  
+  /* Gallery print settings */
+  #printGallery {
+    display: block !important;
+  }
+  
+  /* Sub-schedule page breaks */
+  body.print-break-subs tr.subheader {
+    break-before: page;
+  }
+  
+  /* Media size controls */
+  body.media-s .uploadBox .u-thumb {
+    width: 90px;
+    height: 70px;
+  }
+  
+  body.media-m .uploadBox .u-thumb {
+    width: 140px;
+    height: 100px;
+  }
+  
+  body.media-l .uploadBox .u-thumb {
+    width: 220px;
+    height: 160px;
+  }
+}
+
+/* Page margins */
+@page {
+  margin: 12mm 12mm 12mm 8mm;
+}
+
+/* Screen-only: show which columns are selected */
+.field-picker-item input[type="checkbox"]:checked + label {
+  color: var(--accent, #5aa0ff);
+  font-weight: 500;
+}
+
+.field-picker-item input[type="checkbox"]:not(:checked) + label {
+  opacity: 0.6;
+}
