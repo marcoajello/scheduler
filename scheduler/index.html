@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scheduler</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./theme-and-improvements.css" />
+  <link rel="stylesheet" href="./print-field-picker.css" />
+</head>
+<body>
+  <div id="errorTray" class="error-tray" style="display:none"></div>
+  <header class="container">
+    <div class="header-top">
+      <h1>Shoot Scheduler</h1>
+      <button id="themeToggle" class="ghost theme-toggle" title="Toggle light/dark theme">
+        <span class="theme-text">LIGHT</span>
+      </button>
+    </div>
+
+    <section class="meta card" id="metaSection">
+      <div class="row compact-meta">
+        <label>
+          Title
+          <input id="metaTitle" type="text" placeholder="Project Title">
+        </label>
+        <label>
+          Ver
+          <input id="metaVersion" type="text" placeholder="1.0">
+        </label>
+        <label>
+          Date
+          <input id="metaDate" type="date">
+        </label>
+        <label>
+          DOW
+          <input id="metaDow" type="text" placeholder="Monday" readonly>
+        </label>
+        <label>
+          Day
+          <input id="metaX" type="number" min="1" step="1" placeholder="1">
+        </label>
+        <span class="of-label">of</span>
+        <label class="no-label">
+          <input id="metaY" type="number" min="1" step="1" placeholder="1">
+        </label>
+      </div>
+      <div class="meta-display-row">
+        <div id="metaDisplay" class="metaDisplay">—</div>
+      </div>
+    </section>
+
+    <!-- Day Tabs Bar -->
+    <div class="day-tabs-bar" id="dayTabsBar">
+      <div class="day-tabs" id="dayTabs">
+        <!-- Tabs will be dynamically added here -->
+      </div>
+    </div>
+
+    <div class="controls">
+      <label>
+        Schedule Start (Call Time):
+        <input id="scheduleStart" type="time" step="60" value="08:00">
+      </label>
+      <!-- Event add buttons moved to FAB -->
+      <button id="addRowBtn" style="display:none;">+ Add Event</button>
+      <button id="addCallBtn" style="display:none;">+ Add Call Time</button>
+      <button id="addSubBtn" style="display:none;">+ Add Sub-schedule</button>
+      <button id="resetBtn" class="ghost">Reset to Sample</button> <button id="undoBtn" class="ghost">Undo</button> <button id="redoBtn" class="ghost">Redo</button>
+      <div class="grow"></div>
+      <button id="saveBtn" title="Download a .json backup">Save (.json)</button>
+      <label class="loadBtn">
+        Load (.json)
+        <input id="loadInput" type="file" accept="application/json">
+      </label>
+      <button id="printBtn">Print </button>
+    </div>
+
+    <details id="palettePanel" class="card palette">
+      <summary>Global Color Palette</summary>
+      <div class="pal-wrap">
+        <div id="palChips" class="chips"></div>
+        <div class="pal-actions">
+          <label class="addcolor">
+            Add
+            <input id="palAdd" type="color" value="#5aa0ff">
+          </label>
+          <button id="palReset" class="ghost">Reset Defaults</button>
+          <button id="palSave" class="">Save Palette</button>
+        </div>
+        <small class="muted">Use per-row 🎨 (background) and <span class="fgA">A</span> (font) to color any row. “Inherit” resets to default / parent.</small>
+      </div>
+    </details>
+
+    <details id="colPanel" class="card colpanel">
+      <summary>Column Manager</summary>
+      <div class="col-wrap">
+        <div id="colList" class="col-list"></div>
+        <div class="col-actions">
+          <button id="colAdd">+ Add Column</button>
+          <button id="colReset" class="ghost">Reset to Defaults</button>
+        </div>
+        <small class="muted"></small>
+      </div>
+    </details>
+
+    <details id="printPanel" class="card printpanel">
+      <summary>Print Settings</summary>
+      
+      <!-- Print Header Input -->
+      <div class="print-header-section">
+        <label>
+          Print Header (what appears at top of printout):
+          <textarea id="printHeaderText" rows="2" placeholder="e.g., Project Name — Day 1 of 3 — October 30, 2025"></textarea>
+        </label>
+        <small class="muted">This text will appear at the top of your printout. Leave blank to use schedule metadata.</small>
+      </div>
+      
+      <!-- Field picker will be injected here by print-field-picker.js -->
+      <div class="print-grid">
+        <label><input type="checkbox" id="psShowMeta" checked> Show header/meta</label>
+        <label><input type="checkbox" id="psCompact"> Compact rows</label>
+        <label><input type="checkbox" id="psGridLines" checked> Show grid lines</label>
+        <label><input type="checkbox" id="psBreakSubs"> Page break before each Sub-schedule</label>
+        <label>Media size
+          <select id="psMediaSize">
+            <option value="s">Small</option>
+            <option value="m" selected>Medium</option>
+            <option value="l">Large</option>
+          </select>
+        </label>
+        <label>Max media per cell (print)
+          <input type="number" id="psMediaMax" min="0" step="1" value="0" title="0 = no limit">
+        </label>
+      </div>
+      <small class="muted">These settings apply to print output.</small>
+    </details>
+  </header>
+
+  <main class="container">
+    <div class="schedule-scroll"><table id="scheduleTable" class="schedule">
+  <colgroup id="colGroup"></colgroup>
+      <thead><tr id="headerRow"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+</div>
+
+    <section id="printGallery" class="gallery card" hidden>
+      <h2>Media Gallery</h2>
+      <div class="g-grid" id="galleryGrid"></div>
+    </section>
+  </main>
+
+  <footer class="container foot">
+    <small>Local-only app. Use <strong>Save (.json)</strong> for backups.</small>
+  </footer>
+
+  <!-- Floating Action Button -->
+  <div class="fab-container">
+    <div class="fab-menu" id="fabMenu">
+      <button class="fab-option" id="fabAddEvent" title="Add Event">
+        <span class="fab-label">Add Event</span>
+      </button>
+      <button class="fab-option" id="fabAddCall" title="Add Call Time">
+        <span class="fab-label">Add Call Time</span>
+      </button>
+      <button class="fab-option" id="fabAddSub" title="Add Sub-schedule">
+        <span class="fab-label">Add Sub-schedule</span>
+      </button>
+      <div class="fab-divider"></div>
+      <button class="fab-option fab-option-special" id="fabAddDay" title="Add Day">
+        <span class="fab-label">Add Day</span>
+      </button>
+    </div>
+    <button class="fab" id="fab" title="Add new item">
+      <span class="fab-icon-main">+</span>
+    </button>
+  </div>
+
+  <style id="printDynamic"></style>
+  <script src="./script.js"></script>
+  <script src="./print-field-picker.js"></script>
+</body>
+</html>

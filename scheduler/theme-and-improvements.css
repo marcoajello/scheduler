@@ -1,0 +1,198 @@
+/* Theme Toggle and Light Theme Styles */
+
+/* Light theme color variables */
+body.light-theme {
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --muted: #4a5568;
+  --text: #1a202c;
+  --accent: #3182ce;
+  --row: #ffffff;
+  --rowAlt: #f7fafc;
+  --border: #e2e8f0;
+  --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+body.light-theme {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Light theme adjustments for various elements */
+body.light-theme .card {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+body.light-theme input,
+body.light-theme textarea,
+body.light-theme select {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.light-theme thead th {
+  background: #f7fafc;
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+
+body.light-theme tbody tr {
+  background: var(--row);
+}
+
+body.light-theme tbody tr:nth-child(even) {
+  background: var(--rowAlt);
+}
+
+body.light-theme .meta input {
+  background: #ffffff;
+}
+
+body.light-theme button.ghost {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+body.light-theme .badge {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+body.light-theme .tag-pill {
+  background: #edf2f7;
+  color: #2d3748;
+  border-color: var(--border);
+}
+
+body.light-theme .uploadBox {
+  background: #f7fafc;
+}
+
+/* Header top with theme toggle */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.header-top h1 {
+  margin: 0;
+}
+
+.theme-toggle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--row);
+  border-color: var(--accent);
+}
+
+.theme-text {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+
+/* Print header section */
+.print-header-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.print-header-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.print-header-section textarea {
+  width: 100%;
+  min-height: 50px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.print-header-section button {
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
+.print-header-section small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Print-specific header styles */
+@media print {
+  .print-header {
+    width: 100%;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-sizing: border-box;
+  }
+  
+  .print-header-text {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  /* Match header width to table */
+  .meta {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Page break control */
+  tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  tbody tr.row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Keep sub-schedules together if possible */
+  tr.subheader {
+    page-break-before: auto;
+    page-break-after: avoid;
+    break-before: auto;
+    break-after: avoid;
+  }
+  
+  tr.subchild {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
