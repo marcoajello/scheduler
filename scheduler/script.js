@@ -49,6 +49,22 @@ window.addEventListener('error', function(event) {
   // Don't prevent default - let error still log to console
 });
 
+// === Global Utility Functions ===
+// Calculate appropriate text color based on background brightness
+function getContrastColor(hexColor) {
+  if (!hexColor || hexColor === '') return '';
+  // Remove # if present
+  const hex = hexColor.replace('#', '');
+  // Convert to RGB
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  // Calculate relative luminance
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  // Return black for light backgrounds, white for dark backgrounds
+  return luminance > 0.5 ? '#000000' : '#ffffff';
+}
+
 // === Header Logic Start ===
 function getVal(id){ return document.getElementById(id)?.value?.trim() || ""; }
 function getDayOfWeek(){ return getVal('dayOfWeek') || getVal('metaDow'); }
@@ -369,7 +385,7 @@ document.addEventListener("DOMContentLoaded", updateHeaderDisplay);
     const colList=qs('#colList'), colAdd=qs('#colAdd'), colReset=qs('#colReset');
 
     // Print settings
-    const psUseDesigner=qs('#psUseDesigner'), psShowMeta=qs('#psShowMeta'), psCompact=qs('#psCompact'), psGridLines=qs('#psGridLines'), psBreakSubs=qs('#psBreakSubs'), psMediaSize=qs('#psMediaSize'), psMediaMax=qs('#psMediaMax'), psAppendGallery=qs('#psAppendGallery'), psGalleryCols=qs('#psGalleryCols'), psGallerySize=qs('#psGallerySize');
+    const psUseDesigner=qs('#psUseDesigner'), psShowMeta=qs('#psShowMeta'), psCompact=qs('#psCompact'), psGridLines=qs('#psGridLines'), psBreakSubs=qs('#psBreakSubs'), psMediaSize=qs('#psMediaSize'), psMediaHeight=qs('#psMediaHeight'), psMediaMax=qs('#psMediaMax'), psAppendGallery=qs('#psAppendGallery'), psGalleryCols=qs('#psGalleryCols'), psGallerySize=qs('#psGallerySize');
     const printDynamic=qs('#printDynamic'), printGallery=qs('#printGallery'), galleryGrid=qs('#galleryGrid');
 
     // Designer
@@ -1327,14 +1343,91 @@ function addHeaderResizeGrips(){
 
     // Row color helpers
     function applyRowBg(tr,color,isSub,isChild){
-      if(isChild){ if(color){ tr.dataset.subChildColor=color; tr.style.setProperty('--subchild-bg', color); } else { delete tr.dataset.subChildColor; tr.style.removeProperty('--subchild-bg'); const parent=qs(`tbody tr.row[data-id="${tr.dataset.parent}"]`); if(parent) tr.style.setProperty('--subchild-bg', parent.dataset.subColor || ''); } return; }
-      if(isSub){ tr.dataset.subColor=color||''; tr.style.setProperty('--sub-bg', color||''); return; }
-      if(color){ tr.dataset.rowBg=color; tr.style.setProperty('--row-bg', color); } else { delete tr.dataset.rowBg; tr.style.removeProperty('--row-bg'); }
+      if(isChild){ 
+        if(color){ 
+          tr.dataset.subChildColor=color; 
+          tr.style.setProperty('--subchild-bg', color);
+          // Auto-set text color for contrast
+          const autoFg = getContrastColor(color);
+          if (autoFg && !tr.dataset.subChildFg) {
+            tr.style.setProperty('--subchild-fg', autoFg);
+          }
+        } else { 
+          delete tr.dataset.subChildColor; 
+          tr.style.removeProperty('--subchild-bg'); 
+          const parent=qs(`tbody tr.row[data-id="${tr.dataset.parent}"]`); 
+          if(parent) tr.style.setProperty('--subchild-bg', parent.dataset.subColor || ''); 
+        } 
+        return; 
+      }
+      if(isSub){ 
+        tr.dataset.subColor=color||''; 
+        tr.style.setProperty('--sub-bg', color||'');
+        // Auto-set text color for contrast
+        if (color) {
+          const autoFg = getContrastColor(color);
+          if (autoFg && !tr.dataset.subFg) {
+            tr.style.setProperty('--sub-fg', autoFg);
+          }
+        }
+        return; 
+      }
+      if(color){ 
+        tr.dataset.rowBg=color; 
+        tr.style.setProperty('--row-bg', color);
+        // Auto-set text color for contrast
+        const autoFg = getContrastColor(color);
+        if (autoFg && !tr.dataset.rowFg) {
+          tr.style.setProperty('--row-fg', autoFg);
+        }
+      } else { 
+        delete tr.dataset.rowBg; 
+        tr.style.removeProperty('--row-bg'); 
+      }
     }
     function applyRowFg(tr,color,isSub,isChild){
-      if(isChild){ if(color){ tr.dataset.subChildFg=color; tr.style.setProperty('--subchild-fg', color); } else { delete tr.dataset.subChildFg; tr.style.removeProperty('--subchild-fg'); } return; }
-      if(isSub){ if(color){ tr.dataset.subFg=color; tr.style.setProperty('--sub-fg', color); } else { delete tr.dataset.subFg; tr.style.removeProperty('--sub-fg'); } return; }
-      if(color){ tr.dataset.rowFg=color; tr.style.setProperty('--row-fg', color); } else { delete tr.dataset.rowFg; tr.style.removeProperty('--row-fg'); }
+      if(isChild){ 
+        if(color){ 
+          tr.dataset.subChildFg=color; 
+          tr.style.setProperty('--subchild-fg', color); 
+        } else { 
+          delete tr.dataset.subChildFg; 
+          tr.style.removeProperty('--subchild-fg');
+          // Reapply auto-contrast if background color exists
+          if (tr.dataset.subChildColor) {
+            const autoFg = getContrastColor(tr.dataset.subChildColor);
+            if (autoFg) tr.style.setProperty('--subchild-fg', autoFg);
+          }
+        } 
+        return; 
+      }
+      if(isSub){ 
+        if(color){ 
+          tr.dataset.subFg=color; 
+          tr.style.setProperty('--sub-fg', color); 
+        } else { 
+          delete tr.dataset.subFg; 
+          tr.style.removeProperty('--sub-fg');
+          // Reapply auto-contrast if background color exists
+          if (tr.dataset.subColor) {
+            const autoFg = getContrastColor(tr.dataset.subColor);
+            if (autoFg) tr.style.setProperty('--sub-fg', autoFg);
+          }
+        } 
+        return; 
+      }
+      if(color){ 
+        tr.dataset.rowFg=color; 
+        tr.style.setProperty('--row-fg', color); 
+      } else { 
+        delete tr.dataset.rowFg; 
+        tr.style.removeProperty('--row-fg');
+        // Reapply auto-contrast if background color exists
+        if (tr.dataset.rowBg) {
+          const autoFg = getContrastColor(tr.dataset.rowBg);
+          if (autoFg) tr.style.setProperty('--row-fg', autoFg);
+        }
+      }
     }
 
     // Headers
@@ -1454,9 +1547,25 @@ function addHeaderResizeGrips(){
       tr.dataset.anchorMode=rowData.anchorMode||(tr.dataset.type==='SUB'?'eventEnd':'start');
       tr.dataset.anchorId=rowData.anchorId||'';
       // restore colors
-      if(rowData.rowBg){ tr.dataset.rowBg=rowData.rowBg; tr.style.setProperty('--row-bg', rowData.rowBg); }
+      if(rowData.rowBg){ 
+        tr.dataset.rowBg=rowData.rowBg; 
+        tr.style.setProperty('--row-bg', rowData.rowBg);
+        // Auto-set text color if not explicitly set
+        if (!rowData.rowFg) {
+          const autoFg = getContrastColor(rowData.rowBg);
+          if (autoFg) tr.style.setProperty('--row-fg', autoFg);
+        }
+      }
       if(rowData.rowFg){ tr.dataset.rowFg=rowData.rowFg; tr.style.setProperty('--row-fg', rowData.rowFg); }
-      if(rowData.subColor){ tr.dataset.subColor=rowData.subColor; tr.style.setProperty('--sub-bg', rowData.subColor); }
+      if(rowData.subColor){ 
+        tr.dataset.subColor=rowData.subColor; 
+        tr.style.setProperty('--sub-bg', rowData.subColor);
+        // Auto-set text color if not explicitly set
+        if (!rowData.subFg) {
+          const autoFg = getContrastColor(rowData.subColor);
+          if (autoFg) tr.style.setProperty('--sub-fg', autoFg);
+        }
+      }
       if(rowData.subFg){ tr.dataset.subFg=rowData.subFg; tr.style.setProperty('--sub-fg', rowData.subFg); }
 
       const cells={}; const td=k=>{ const el=document.createElement('td'); el.dataset.key=k; return el; };
@@ -2070,20 +2179,32 @@ function addHeaderResizeGrips(){
     });
 
     // Print settings
-    function applyPrintUiFromState(){ const p=getPrint(); psUseDesigner&&(psUseDesigner.checked=!!p.useDesigner); psShowMeta&&(psShowMeta.checked=!!p.showMeta); psCompact&&(psCompact.checked=!!p.compact); psGridLines&&(psGridLines.checked=!!p.gridLines); psBreakSubs&&(psBreakSubs.checked=!!p.breakSubs); psMediaSize&&(psMediaSize.value=p.mediaSize||'m'); psMediaMax&&(psMediaMax.value=p.mediaMax||0); psAppendGallery&&(psAppendGallery.checked=!!p.appendGallery); psGalleryCols&&(psGalleryCols.value=p.galleryCols||4); psGallerySize&&(psGallerySize.value=p.gallerySize||'m'); }
-    function bindPrintInputs(){ [psUseDesigner,psShowMeta,psCompact,psGridLines,psBreakSubs,psMediaSize,psMediaMax,psAppendGallery,psGalleryCols,psGallerySize].forEach(el=>{ el&&el.addEventListener('change', ()=>{ setPrint({ useDesigner:psUseDesigner?.checked, showMeta:psShowMeta?.checked, compact:psCompact?.checked, gridLines:psGridLines?.checked, breakSubs:psBreakSubs?.checked, mediaSize:psMediaSize?.value, mediaMax:Number(psMediaMax?.value||0), appendGallery:psAppendGallery?.checked, galleryCols:Number(psGalleryCols?.value||4), gallerySize:psGallerySize?.value }); }); }); }
+    function applyPrintUiFromState(){ const p=getPrint(); psUseDesigner&&(psUseDesigner.checked=!!p.useDesigner); psShowMeta&&(psShowMeta.checked=!!p.showMeta); psCompact&&(psCompact.checked=!!p.compact); psGridLines&&(psGridLines.checked=!!p.gridLines); psBreakSubs&&(psBreakSubs.checked=!!p.breakSubs); psMediaSize&&(psMediaSize.value=p.mediaSize||'m'); psMediaHeight&&(psMediaHeight.value=p.mediaHeight||100); psMediaMax&&(psMediaMax.value=p.mediaMax||0); psAppendGallery&&(psAppendGallery.checked=!!p.appendGallery); psGalleryCols&&(psGalleryCols.value=p.galleryCols||4); psGallerySize&&(psGallerySize.value=p.gallerySize||'m'); }
+    function bindPrintInputs(){ [psUseDesigner,psShowMeta,psCompact,psGridLines,psBreakSubs,psMediaSize,psMediaHeight,psMediaMax,psAppendGallery,psGalleryCols,psGallerySize].forEach(el=>{ el&&el.addEventListener('change', ()=>{ setPrint({ useDesigner:psUseDesigner?.checked, showMeta:psShowMeta?.checked, compact:psCompact?.checked, gridLines:psGridLines?.checked, breakSubs:psBreakSubs?.checked, mediaSize:psMediaSize?.value, mediaHeight:Number(psMediaHeight?.value||100), mediaMax:Number(psMediaMax?.value||0), appendGallery:psAppendGallery?.checked, galleryCols:Number(psGalleryCols?.value||4), gallerySize:psGallerySize?.value }); }); }); }
     function applyBodyPrintClasses(p){ document.body.classList.toggle('print-hide-meta', !p.showMeta); document.body.classList.toggle('print-compact', !!p.compact); document.body.classList.toggle('print-no-grid', !p.gridLines); document.body.classList.toggle('print-break-subs', !!p.breakSubs); document.body.classList.remove('media-s','media-m','media-l'); document.body.classList.add('media-'+(p.mediaSize||'m')); document.body.classList.remove('gallery-s','gallery-m','gallery-l'); document.body.classList.add('gallery-'+(p.gallerySize||'m')); }
-    function buildDynamicPrintCSS(p){ const max=p.mediaMax||0; let css=''; if(max>0){ css+=`.uploadBox .u-grid .u-item:nth-child(n+${max+1}){display:none!important;}`;} const cols=Math.max(1,p.galleryCols||4); css+=`#printGallery .g-grid{grid-template-columns:repeat(${cols},1fr);}`; printDynamic.textContent=css; }
+    function buildDynamicPrintCSS(p){ const max=p.mediaMax||0; const height=p.mediaHeight||100; let css=''; if(max>0){ css+=`.uploadBox .u-grid .u-item:nth-child(n+${max+1}){display:none!important;}`;} css+=`@media print { .uploadBox .u-item, .uploadBox .u-thumb, .uploadBox img, .uploadBox video { max-height: ${height}px !important; } }`; const cols=Math.max(1,p.galleryCols||4); css+=`#printGallery .g-grid{grid-template-columns:repeat(${cols},1fr);}`; printDynamic.textContent=css; }
     async function buildGallery(p){ if(!p.appendGallery){ printGallery.hidden=true; galleryGrid.innerHTML=''; return; } printGallery.hidden=false; galleryGrid.innerHTML=''; const cells=qsa('td[data-key^="c_"] .uploadBox'); for(const cell of cells){ let ids=[]; try{ ids=JSON.parse(cell.parentElement.dataset.vaultIds||'[]'); }catch{} for(const id of ids){ try{ const rec=await vaultGet(Number(id)); if(!rec) continue; if(!/^image|^video/.test(rec.type)) continue; const url=URL.createObjectURL(rec.data); const item=document.createElement('div'); item.className='g-item'; if(rec.type.startsWith('image/')){ item.innerHTML=`<img src="${url}"><div class="cap">${rec.name||'Image'}</div>`; } else { item.innerHTML=`<video src="${url}" controls></video><div class="cap">${rec.name||'Video'}</div>`; } galleryGrid.appendChild(item); }catch(e){} } } }
     function beforePrint(){ const p=getPrint(); applyBodyPrintClasses(p); buildGallery(p).catch(()=>{}); }
     window.onbeforeprint=beforePrint;
+
+    // Meta format button
+    (function() {
+      const btn = qs('#metaFormatBtn');
+      const display = qs('#metaDisplay');
+      if (btn && display) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          buildFormattingPopover(btn, display, 'meta');
+        });
+      }
+    })();
 
     // Designer (from 8.9, simplified + fixed)
     function getLayouts(){ return readState().layouts || [ { id: 'layout_default', name:'One‑pager', modules:[ {id:uid(), type:'meta', x:1,y:1,w:12,h:2}, {id:uid(), type:'table', x:1,y:3,w:12,h:10} ] } ]; }
     function setLayouts(arr){ const s=readState(); writeState({...s, layouts: arr}); refreshLayoutPicker(); renderDesigner(); }
     function getActiveLayoutId(){ return readState().activeLayoutId || getLayouts()[0].id; }
     function setActiveLayoutId(id){ const s=readState(); writeState({...s, activeLayoutId:id}); refreshLayoutPicker(); renderDesigner(); }
-    function refreshLayoutPicker(){ const arr=getLayouts(); const active=getActiveLayoutId(); dLayoutSelect.innerHTML = arr.map(l=>`<option value="${l.id}" ${l.id===active?'selected':''}>${l.name}</option>`).join(''); }
+    function refreshLayoutPicker(){ if(!dLayoutSelect) return; const arr=getLayouts(); const active=getActiveLayoutId(); dLayoutSelect.innerHTML = arr.map(l=>`<option value="${l.id}" ${l.id===active?'selected':''}>${l.name}</option>`).join(''); }
 
     function renderDesigner(){
       if(!designerCanvas) return;
@@ -2315,6 +2436,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  
+  // Fix contrast for all existing colored rows on page load
+  function fixAllRowContrast() {
+    // Get ALL table rows
+    const allRows = document.querySelectorAll('tbody tr');
+    
+    allRows.forEach(tr => {
+      // Determine which type of row this is
+      const isSub = tr.classList.contains('subheader');
+      const isChild = tr.classList.contains('subchild');
+      
+      // Check if user has explicitly set a text color (stored in data attributes)
+      let hasUserColor = false;
+      let bgColor = null;
+      
+      if (isChild) {
+        hasUserColor = !!(tr.dataset.subChildFg);
+        bgColor = tr.dataset.subChildColor;
+      } else if (isSub) {
+        hasUserColor = !!(tr.dataset.subFg);
+        bgColor = tr.dataset.subColor;
+      } else {
+        hasUserColor = !!(tr.dataset.rowFg);
+        bgColor = tr.dataset.rowBg;
+      }
+      
+      // Only apply auto-contrast if:
+      // 1. Row has a background color
+      // 2. User has NOT explicitly set a text color
+      if (bgColor && !hasUserColor) {
+        const autoFg = getContrastColor(bgColor);
+        if (autoFg) {
+          if (isChild) {
+            tr.style.setProperty('--subchild-fg', autoFg);
+          } else if (isSub) {
+            tr.style.setProperty('--sub-fg', autoFg);
+          } else {
+            tr.style.setProperty('--row-fg', autoFg);
+          }
+        }
+      }
+    });
+  }
+  
+  // Run the contrast fix multiple times to catch dynamic content
+  setTimeout(fixAllRowContrast, 100);
+  setTimeout(fixAllRowContrast, 500);
+  setTimeout(fixAllRowContrast, 1000);
   
   // Print header functionality
   const printHeaderText = document.getElementById('printHeaderText');

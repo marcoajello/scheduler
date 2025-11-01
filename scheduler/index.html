@@ -19,34 +19,39 @@
     </div>
 
     <section class="meta card" id="metaSection">
-      <div class="row compact-meta">
-        <label>
-          Title
-          <input id="metaTitle" type="text" placeholder="Project Title">
-        </label>
-        <label>
-          Ver
-          <input id="metaVersion" type="text" placeholder="1.0">
-        </label>
-        <label>
-          Date
-          <input id="metaDate" type="date">
-        </label>
-        <label>
-          DOW
-          <input id="metaDow" type="text" placeholder="Monday" readonly>
-        </label>
-        <label>
-          Day
-          <input id="metaX" type="number" min="1" step="1" placeholder="1">
-        </label>
-        <span class="of-label">of</span>
-        <label class="no-label">
-          <input id="metaY" type="number" min="1" step="1" placeholder="1">
-        </label>
-      </div>
-      <div class="meta-display-row">
-        <div id="metaDisplay" class="metaDisplay">—</div>
+      <div class="meta-content-wrapper">
+        <button id="metaFormatBtn" class="meta-handle-btn" title="Format header display">✎</button>
+        <div class="meta-fields">
+          <div class="row compact-meta">
+            <span class="title-label-left">TITLE</span>
+            <label class="title-field-only">
+              <input id="metaTitle" type="text" placeholder="Project Title">
+            </label>
+            <label>
+              Ver
+              <input id="metaVersion" type="text" placeholder="1.0">
+            </label>
+            <label>
+              Date
+              <input id="metaDate" type="date">
+            </label>
+            <label>
+              DOW
+              <input id="metaDow" type="text" placeholder="Monday" readonly>
+            </label>
+            <label>
+              Day
+              <input id="metaX" type="number" min="1" step="1" placeholder="1">
+            </label>
+            <span class="of-label">of</span>
+            <label class="no-label">
+              <input id="metaY" type="number" min="1" step="1" placeholder="1">
+            </label>
+          </div>
+          <div class="meta-display-row">
+            <div id="metaDisplay" class="metaDisplay">—</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -128,6 +133,9 @@
             <option value="m" selected>Medium</option>
             <option value="l">Large</option>
           </select>
+        </label>
+        <label>Media height (print, px)
+          <input type="number" id="psMediaHeight" min="50" max="500" step="10" value="100" title="Height of images in printout">
         </label>
         <label>Max media per cell (print)
           <input type="number" id="psMediaMax" min="0" step="1" value="0" title="0 = no limit">
