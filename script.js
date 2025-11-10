@@ -5868,14 +5868,25 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   function updateFileNameDisplay() {
     const currentFile = localStorage.getItem('currentCloudFile');
     const provider = localStorage.getItem('currentCloudProvider') || 'local';
+    const headerDisplay = document.getElementById('headerFileDisplay');
     
     if (currentFile) {
       currentFileNameInput.value = currentFile.replace('.json', '');
       fileProviderLabel.textContent = provider === 'dropbox' ? 'Dropbox file' : provider === 'supabase' ? 'Supabase file' : 'Local file';
+      
+      // Update header display
+      if (headerDisplay) {
+        headerDisplay.textContent = currentFile.replace('.json', '');
+      }
     } else {
       currentFileNameInput.value = '';
       currentFileNameInput.placeholder = 'Untitled Schedule';
       fileProviderLabel.textContent = 'Not saved';
+      
+      // Update header display
+      if (headerDisplay) {
+        headerDisplay.textContent = 'Untitled Schedule';
+      }
     }
   }
   
