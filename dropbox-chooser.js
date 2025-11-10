@@ -54,24 +54,22 @@ window.saveToDropbox = function(state) {
   
   // Convert to JSON
   const jsonString = JSON.stringify(state, null, 2);
-  const blob = new Blob([jsonString], { type: 'application/json' });
   
-  // Create blob URL (Dropbox Saver needs a URL, not a File object!)
-  const blobUrl = URL.createObjectURL(blob);
+  // Convert to base64 data URL (Dropbox can fetch this!)
+  const base64 = btoa(unescape(encodeURIComponent(jsonString)));
+  const dataUrl = `data:application/json;base64,${base64}`;
   
   Dropbox.save({
     files: [{
-      url: blobUrl,
+      url: dataUrl,
       filename: fileName
     }],
     success: function() {
       localStorage.setItem('currentCloudFile', fileName);
       localStorage.setItem('currentCloudProvider', 'dropbox');
-      URL.revokeObjectURL(blobUrl); // Clean up
       alert('✓ Saved to Dropbox!');
     },
     error: function(errorMessage) {
-      URL.revokeObjectURL(blobUrl); // Clean up
       alert('Failed to save: ' + errorMessage);
     }
   });
@@ -101,24 +99,32 @@ window.pickImageFromDropbox = function(callback) {
 // Save image to Dropbox (when uploading to schedule)
 window.saveImageToDropbox = async function(file) {
   return new Promise((resolve, reject) => {
-    const blobUrl = URL.createObjectURL(file);
+    const reader = new FileReader();
     
-    Dropbox.save({
-      files: [{
-        url: blobUrl,
-        filename: file.name
-      }],
-      success: function() {
-        URL.revokeObjectURL(blobUrl);
-        console.log('Image saved to Dropbox');
-        resolve({ success: true });
-      },
-      error: function(errorMessage) {
-        URL.revokeObjectURL(blobUrl);
-        console.error('Dropbox image save failed:', errorMessage);
-        reject(new Error(errorMessage));
-      }
-    });
+    reader.onload = function() {
+      const dataUrl = reader.result;
+      
+      Dropbox.save({
+        files: [{
+          url: dataUrl,
+          filename: file.name
+        }],
+        success: function() {
+          console.log('Image saved to Dropbox');
+          resolve({ success: true });
+        },
+        error: function(errorMessage) {
+          console.error('Dropbox image save failed:', errorMessage);
+          reject(new Error(errorMessage));
+        }
+      });
+    };
+    
+    reader.onerror = function() {
+      reject(new Error('Failed to read file'));
+    };
+    
+    reader.readAsDataURL(file);
   });
 };
 
