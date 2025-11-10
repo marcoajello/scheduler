@@ -93,10 +93,10 @@ body.light-theme .col-table thead{background:#ffffff;}
 .file-wrap{display:grid;gap:16px;}
 .file-section{border-bottom:1px solid var(--border);padding-bottom:16px;}
 .file-section:last-child{border-bottom:none;padding-bottom:0;}
-.file-section h4{margin:0 0 10px 0;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.file-section h4{margin:0 0 10px 0;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
 .file-name-row{display:flex;gap:8px;align-items:center;}
-.file-buttons{display:grid;gap:8px;}
-.file-buttons button{width:100%;text-align:left;padding:10px 12px;}
+.file-buttons{display:grid;gap:6px;}
+.file-buttons button{width:100%;text-align:left;padding:8px 12px;font-size:12px;font-weight:500;}
 body.light-theme .col-table input.colLabel{background:#ffffff;}
 body.light-theme .col-table select.colType,.col-table select.colAlign{background:#ffffff;}
 
