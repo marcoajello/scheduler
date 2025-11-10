@@ -5853,4 +5853,208 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
     });
   }
 
+  // ==============================================
+  // FILE MANAGER
+  // ==============================================
+  
+  const currentFileNameInput = document.getElementById('currentFileName');
+  const fileProviderLabel = document.getElementById('fileProviderLabel');
+  const renameFileBtn = document.getElementById('renameFileBtn');
+  
+  // Initialize filename display
+  function updateFileNameDisplay() {
+    const currentFile = localStorage.getItem('currentCloudFile');
+    const provider = localStorage.getItem('currentCloudProvider') || 'local';
+    
+    if (currentFile) {
+      currentFileNameInput.value = currentFile.replace('.json', '');
+      fileProviderLabel.textContent = provider === 'dropbox' ? 'Dropbox file' : provider === 'supabase' ? 'Supabase file' : 'Local file';
+    } else {
+      currentFileNameInput.value = '';
+      currentFileNameInput.placeholder = 'Untitled Schedule';
+      fileProviderLabel.textContent = 'Not saved';
+    }
+  }
+  
+  // Call on page load
+  updateFileNameDisplay();
+  
+  // Rename file button
+  if (renameFileBtn) {
+    renameFileBtn.addEventListener('click', () => {
+      let newName = currentFileNameInput.value.trim();
+      if (!newName) {
+        alert('Please enter a filename');
+        return;
+      }
+      
+      // Ensure .json extension
+      if (!newName.endsWith('.json')) {
+        newName += '.json';
+      }
+      
+      localStorage.setItem('currentCloudFile', newName);
+      updateFileNameDisplay();
+      alert(`File renamed to: ${newName}`);
+    });
+  }
+  
+  // Save JSON (local download)
+  const saveJsonBtn = document.getElementById('saveJsonBtn');
+  if (saveJsonBtn) {
+    saveJsonBtn.addEventListener('click', () => {
+      const state = readState();
+      let filename = currentFileNameInput.value.trim() || 'schedule';
+      if (!filename.endsWith('.json')) {
+        filename += '.json';
+      }
+      
+      const json = JSON.stringify(state, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      localStorage.setItem('currentCloudFile', filename);
+      localStorage.setItem('currentCloudProvider', 'local');
+      updateFileNameDisplay();
+    });
+  }
+  
+  // Load JSON (local upload)
+  const loadJsonBtn = document.getElementById('loadJsonBtn');
+  if (loadJsonBtn) {
+    loadJsonBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            window.__LOADING_FILE__ = true;
+            writeState(data);
+            
+            localStorage.setItem('currentCloudFile', file.name);
+            localStorage.setItem('currentCloudProvider', 'local');
+            
+            location.reload();
+          } catch (error) {
+            alert('Invalid JSON file: ' + error.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+  }
+  
+  // Save to Supabase
+  const saveToCloudBtnMgr = document.getElementById('saveToCloudBtnMgr');
+  if (saveToCloudBtnMgr) {
+    saveToCloudBtnMgr.addEventListener('click', async () => {
+      if (!window.SupabaseAPI || !window.SupabaseAPI.isAuthenticated()) {
+        alert('Please sign in to Supabase first');
+        return;
+      }
+      
+      let filename = currentFileNameInput.value.trim();
+      if (!filename) {
+        filename = prompt('Enter a filename:');
+        if (!filename) return;
+      }
+      if (!filename.endsWith('.json')) {
+        filename += '.json';
+      }
+      
+      const state = readState();
+      const result = await window.SupabaseAPI.files.saveScheduleFile(filename, state);
+      
+      if (result.success) {
+        localStorage.setItem('currentCloudFile', filename);
+        localStorage.setItem('currentCloudProvider', 'supabase');
+        updateFileNameDisplay();
+        alert('✓ Saved to Supabase!');
+      } else {
+        alert('Failed to save: ' + result.error);
+      }
+    });
+  }
+  
+  // Open from Supabase
+  const loadFromCloudBtnMgr = document.getElementById('loadFromCloudBtnMgr');
+  if (loadFromCloudBtnMgr) {
+    loadFromCloudBtnMgr.addEventListener('click', () => {
+      if (!window.SupabaseAPI || !window.SupabaseAPI.isAuthenticated()) {
+        alert('Please sign in to Supabase first');
+        return;
+      }
+      
+      // Trigger the existing file browser modal
+      const loadBtn = document.getElementById('loadFromCloudBtn');
+      if (loadBtn) {
+        loadBtn.click();
+      }
+    });
+  }
+  
+  // Save to Dropbox
+  const saveToDropboxBtnMgr = document.getElementById('saveToDropboxBtnMgr');
+  if (saveToDropboxBtnMgr) {
+    saveToDropboxBtnMgr.addEventListener('click', () => {
+      let filename = currentFileNameInput.value.trim();
+      if (!filename) {
+        filename = prompt('Enter a filename:');
+        if (!filename) return;
+      }
+      if (!filename.endsWith('.json')) {
+        filename += '.json';
+      }
+      
+      // Update localStorage with filename before saving
+      localStorage.setItem('currentCloudFile', filename);
+      
+      const state = readState();
+      
+      if (typeof window.saveToDropbox === 'function') {
+        window.saveToDropbox(state);
+        updateFileNameDisplay();
+      } else {
+        alert('Dropbox integration not loaded. Make sure dropbox-chooser.js is included.');
+      }
+    });
+  }
+  
+  // Open from Dropbox
+  const openFromDropboxBtnMgr = document.getElementById('openFromDropboxBtnMgr');
+  if (openFromDropboxBtnMgr) {
+    openFromDropboxBtnMgr.addEventListener('click', () => {
+      if (typeof window.openFromDropbox === 'function') {
+        window.openFromDropbox();
+      } else {
+        alert('Dropbox integration not loaded. Make sure dropbox-chooser.js is included.');
+      }
+    });
+  }
+  
+  // Export CSV
+  const exportCsvBtnMgr = document.getElementById('exportCsvBtnMgr');
+  if (exportCsvBtnMgr) {
+    exportCsvBtnMgr.addEventListener('click', () => {
+      // Trigger the existing CSV export function
+      if (typeof window.exportToCSV === 'function') {
+        window.exportToCSV();
+      } else {
+        alert('CSV export not available');
+      }
+    });
+  }
+
 })();
