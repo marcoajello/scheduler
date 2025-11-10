@@ -5960,7 +5960,7 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const saveToCloudBtnMgr = document.getElementById('saveToCloudBtnMgr');
   if (saveToCloudBtnMgr) {
     saveToCloudBtnMgr.addEventListener('click', async () => {
-      if (!window.SupabaseAPI || !window.SupabaseAPI.isAuthenticated()) {
+      if (!window.SupabaseAPI || !window.SupabaseAPI.auth.isAuthenticated()) {
         alert('Please sign in to Supabase first');
         return;
       }
@@ -5992,7 +5992,7 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const loadFromCloudBtnMgr = document.getElementById('loadFromCloudBtnMgr');
   if (loadFromCloudBtnMgr) {
     loadFromCloudBtnMgr.addEventListener('click', () => {
-      if (!window.SupabaseAPI || !window.SupabaseAPI.isAuthenticated()) {
+      if (!window.SupabaseAPI || !window.SupabaseAPI.auth.isAuthenticated()) {
         alert('Please sign in to Supabase first');
         return;
       }
