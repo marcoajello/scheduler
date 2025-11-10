@@ -88,6 +88,15 @@ button:disabled{opacity:0.5;cursor:not-allowed;}
 .col-actions{display:flex;gap:10px;align-items:center;}
 body.light-theme .col-table{background:#f8f9fa;}
 body.light-theme .col-table thead{background:#ffffff;}
+
+/* File Manager */
+.file-wrap{display:grid;gap:16px;}
+.file-section{border-bottom:1px solid var(--border);padding-bottom:16px;}
+.file-section:last-child{border-bottom:none;padding-bottom:0;}
+.file-section h4{margin:0 0 10px 0;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.file-name-row{display:flex;gap:8px;align-items:center;}
+.file-buttons{display:grid;gap:8px;}
+.file-buttons button{width:100%;text-align:left;padding:10px 12px;}
 body.light-theme .col-table input.colLabel{background:#ffffff;}
 body.light-theme .col-table select.colType,.col-table select.colAlign{background:#ffffff;}
 
