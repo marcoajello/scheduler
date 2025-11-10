@@ -6062,8 +6062,5 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
       }
     });
   }
-      }
-    });
-  }
 
 })();
