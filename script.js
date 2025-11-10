@@ -5812,6 +5812,9 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
       fileList.appendChild(item);
     });
   }
+  
+  // Expose renderFileBrowser to window for File Manager button
+  window.renderFileBrowser = renderFileBrowser;
 
   // ==============================================
   // DROPBOX INTEGRATION
@@ -5989,18 +5992,21 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   }
   
   // Open from Supabase
+  // Open from Supabase
   const loadFromCloudBtnMgr = document.getElementById('loadFromCloudBtnMgr');
   if (loadFromCloudBtnMgr) {
-    loadFromCloudBtnMgr.addEventListener('click', () => {
+    loadFromCloudBtnMgr.addEventListener('click', async () => {
       if (!window.SupabaseAPI || !window.SupabaseAPI.auth.isAuthenticated()) {
         alert('Please sign in to Supabase first');
         return;
       }
       
-      // Trigger the existing file browser modal
-      const loadBtn = document.getElementById('loadFromCloudBtn');
-      if (loadBtn) {
-        loadBtn.click();
+      // Trigger the hidden button that has the proper handler
+      const hiddenBtn = document.getElementById('loadFromCloudBtn');
+      if (hiddenBtn) {
+        hiddenBtn.click();
+      } else {
+        alert('File browser not available');
       }
     });
   }
@@ -6048,11 +6054,14 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const exportCsvBtnMgr = document.getElementById('exportCsvBtnMgr');
   if (exportCsvBtnMgr) {
     exportCsvBtnMgr.addEventListener('click', () => {
-      // Trigger the existing CSV export function
-      if (typeof window.exportToCSV === 'function') {
-        window.exportToCSV();
+      // Call CSVExporter function
+      if (window.CSVExporter && typeof window.CSVExporter.exportToCSV === 'function') {
+        window.CSVExporter.exportToCSV();
       } else {
         alert('CSV export not available');
+      }
+    });
+  }
       }
     });
   }
