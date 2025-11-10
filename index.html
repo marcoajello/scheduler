@@ -51,11 +51,6 @@
     <div class="header-top">
       <h1>SCHEDULER</h1>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <span id="currentFileDisplay" style="font-size: 11px; color: var(--muted); padding: 4px 8px; background: var(--surface); border-radius: 4px; display: none;"></span>
-        <button id="saveToCloudBtn" class="ghost" style="display: none;">☁️ Save to Cloud</button>
-        <button id="loadFromCloudBtn" class="ghost" style="display: none;">📂 Open from Cloud</button>
-        <button id="openFromDropboxBtn" class="ghost">📦 Open from Dropbox</button>
-        <button id="saveToDropboxBtn" class="ghost">📦 Save to Dropbox</button>
         <span id="authStatus" style="font-size: 11px; color: var(--muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; display: none;"></span>
         <button id="signOutBtn" class="ghost" style="display: none;">Sign Out</button>
         <button id="resetBtn" class="ghost">Reset to Sample</button>
@@ -124,6 +119,52 @@
           <div class="col-actions">
             <button id="colAdd">+ Add Column</button>
             <button id="colReset" class="ghost">Reset to Defaults</button>
+          </div>
+        </div>
+      </details>
+      
+      <!-- FILE MANAGER -->
+      <details id="filePanel" class="card colpanel">
+        <summary>File Manager</summary>
+        <div class="file-wrap">
+          <!-- Current File Section -->
+          <div class="file-section">
+            <h4>Current File</h4>
+            <div class="file-name-row">
+              <input id="currentFileName" type="text" placeholder="Untitled Schedule" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
+              <button id="renameFileBtn" class="ghost">Rename</button>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: var(--muted);">
+              <span id="fileProviderLabel">Local file</span>
+            </div>
+          </div>
+          
+          <!-- Local Files Section -->
+          <div class="file-section">
+            <h4>Local Files</h4>
+            <div class="file-buttons">
+              <button id="saveJsonBtn">Save JSON</button>
+              <button id="loadJsonBtn">Load JSON</button>
+            </div>
+          </div>
+          
+          <!-- Cloud Storage Section -->
+          <div class="file-section">
+            <h4>Cloud Storage</h4>
+            <div class="file-buttons">
+              <button id="saveToCloudBtnMgr">Save to Supabase</button>
+              <button id="loadFromCloudBtnMgr">Open from Supabase</button>
+              <button id="saveToDropboxBtnMgr">Save to Dropbox</button>
+              <button id="openFromDropboxBtnMgr">Open from Dropbox</button>
+            </div>
+          </div>
+          
+          <!-- Export Section -->
+          <div class="file-section">
+            <h4>Export</h4>
+            <div class="file-buttons">
+              <button id="exportCsvBtnMgr">Export CSV</button>
+            </div>
           </div>
         </div>
       </details>
@@ -471,7 +512,7 @@
   <script type="text/javascript" 
           src="https://www.dropbox.com/static/api/2/dropins.js" 
           id="dropboxjs" 
-          data-app-key="v0siwpdz7p0sghv"></script>
+          data-app-key="YOUR_DROPBOX_APP_KEY_HERE"></script>
   
   <!-- Dropbox integration -->
   <script src="dropbox-chooser.js"></script>
