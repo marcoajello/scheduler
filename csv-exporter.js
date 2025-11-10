@@ -187,11 +187,11 @@ const CSVExporter = {
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    CSVExporter.addExportButton();
+    // CSVExporter.addExportButton(); // Commented out - button now in File Manager
     console.log('✅ CSV Exporter ready');
   });
 } else {
-  CSVExporter.addExportButton();
+  // CSVExporter.addExportButton(); // Commented out - button now in File Manager
   console.log('✅ CSV Exporter ready');
 }
 
