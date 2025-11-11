@@ -6078,4 +6078,240 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
     });
   }
 
+  // ==============================================
+  // FILE MENU BAR
+  // ==============================================
+  
+  // NEW - Create new schedule
+  const fileNew = document.getElementById('fileNew');
+  if (fileNew) {
+    fileNew.addEventListener('click', () => {
+      if (confirm('Create new schedule? Any unsaved changes will be lost.')) {
+        localStorage.removeItem('currentCloudFile');
+        localStorage.removeItem('currentCloudProvider');
+        
+        // Reset to sample data
+        const sampleBtn = document.getElementById('resetBtn');
+        if (sampleBtn) {
+          sampleBtn.click();
+        }
+        
+        updateFileNameDisplay();
+      }
+    });
+  }
+  
+  // OPEN - Unified file browser
+  const fileOpen = document.getElementById('fileOpen');
+  if (fileOpen) {
+    fileOpen.addEventListener('click', () => {
+      // Show modal with options for different sources
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 10000000;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: #fff;
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 90%;
+      `;
+      content.innerHTML = `
+        <h3 style="margin-top: 0; color: #111827;">Open Schedule</h3>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 20px;">Choose where to open from:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="openLocal" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Computer</button>
+          <button id="openSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Supabase</button>
+          <button id="openDropbox" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Dropbox</button>
+          <button id="openCancel" style="padding: 12px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; margin-top: 8px;">Cancel</button>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      // Handle button clicks
+      document.getElementById('openLocal').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const loadJsonBtn = document.getElementById('loadJsonBtn');
+        if (loadJsonBtn) loadJsonBtn.click();
+      });
+      
+      document.getElementById('openSupabase').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const loadFromCloudBtnMgr = document.getElementById('loadFromCloudBtnMgr');
+        if (loadFromCloudBtnMgr) loadFromCloudBtnMgr.click();
+      });
+      
+      document.getElementById('openDropbox').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        if (typeof window.openFromDropbox === 'function') {
+          window.openFromDropbox();
+        } else {
+          alert('Dropbox integration not loaded');
+        }
+      });
+      
+      document.getElementById('openCancel').addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+      
+      // Close on background click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
+      });
+    });
+  }
+  
+  // SAVE - Quick save to current location
+  const fileSave = document.getElementById('fileSave');
+  if (fileSave) {
+    fileSave.addEventListener('click', () => {
+      const provider = localStorage.getItem('currentCloudProvider') || 'local';
+      const currentFile = localStorage.getItem('currentCloudFile');
+      
+      if (!currentFile) {
+        // No current file - trigger Save As
+        const fileSaveAs = document.getElementById('fileSaveAs');
+        if (fileSaveAs) fileSaveAs.click();
+        return;
+      }
+      
+      // Save to current location
+      const state = readState();
+      
+      if (provider === 'supabase') {
+        // Save to Supabase
+        if (!window.SupabaseAPI || !window.SupabaseAPI.auth.isAuthenticated()) {
+          alert('Not signed in to Supabase');
+          return;
+        }
+        window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(result => {
+          if (result.success) {
+            alert('✓ Saved to Supabase');
+          } else {
+            alert('Failed to save: ' + result.error);
+          }
+        });
+      } else if (provider === 'dropbox') {
+        // Save to Dropbox
+        if (typeof window.saveToDropbox === 'function') {
+          window.saveToDropbox(state);
+        } else {
+          alert('Dropbox integration not loaded');
+        }
+      } else {
+        // Save locally
+        const jsonString = JSON.stringify(state, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentFile;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('✓ Downloaded to computer');
+      }
+    });
+  }
+  
+  // SAVE AS - Always prompt for new name/location
+  const fileSaveAs = document.getElementById('fileSaveAs');
+  if (fileSaveAs) {
+    fileSaveAs.addEventListener('click', () => {
+      // Show modal with save options
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 10000000;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: #fff;
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 90%;
+      `;
+      content.innerHTML = `
+        <h3 style="margin-top: 0; color: #111827;">Save As</h3>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 20px;">Choose where to save:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button id="saveAsLocal" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Computer</button>
+          <button id="saveAsSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Supabase</button>
+          <button id="saveAsDropbox" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Dropbox</button>
+          <button id="saveAsCancel" style="padding: 12px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; margin-top: 8px;">Cancel</button>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      // Handle button clicks
+      document.getElementById('saveAsLocal').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const saveJsonBtn = document.getElementById('saveJsonBtn');
+        if (saveJsonBtn) saveJsonBtn.click();
+      });
+      
+      document.getElementById('saveAsSupabase').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const saveToCloudBtnMgr = document.getElementById('saveToCloudBtnMgr');
+        if (saveToCloudBtnMgr) saveToCloudBtnMgr.click();
+      });
+      
+      document.getElementById('saveAsDropbox').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const saveToDropboxBtnMgr = document.getElementById('saveToDropboxBtnMgr');
+        if (saveToDropboxBtnMgr) saveToDropboxBtnMgr.click();
+      });
+      
+      document.getElementById('saveAsCancel').addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+      
+      // Close on background click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+        }
+      });
+    });
+  }
+  
+  // CLOSE - Clear current file
+  const fileClose = document.getElementById('fileClose');
+  if (fileClose) {
+    fileClose.addEventListener('click', () => {
+      if (confirm('Close current schedule? Any unsaved changes will be lost.')) {
+        localStorage.removeItem('currentCloudFile');
+        localStorage.removeItem('currentCloudProvider');
+        updateFileNameDisplay();
+      }
+    });
+  }
+
 })();
