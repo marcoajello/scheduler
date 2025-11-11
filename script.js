@@ -5087,17 +5087,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('scheduler-theme') || 'light';
     if (savedTheme === 'light') {
       document.body.classList.add('light-theme');
+      document.body.classList.remove('dark-theme');
       if (themeText) themeText.textContent = 'DARK';
     } else {
+      document.body.classList.add('dark-theme');
+      document.body.classList.remove('light-theme');
       if (themeText) themeText.textContent = 'LIGHT';
     }
     
     themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('light-theme');
-      const isLight = document.body.classList.contains('light-theme');
-      localStorage.setItem('scheduler-theme', isLight ? 'light' : 'dark');
-      if (themeText) {
-        themeText.textContent = isLight ? 'DARK' : 'LIGHT';
+      const isCurrentlyLight = document.body.classList.contains('light-theme');
+      
+      if (isCurrentlyLight) {
+        // Switch to dark
+        document.body.classList.remove('light-theme');
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('scheduler-theme', 'dark');
+        if (themeText) themeText.textContent = 'LIGHT';
+      } else {
+        // Switch to light
+        document.body.classList.remove('dark-theme');
+        document.body.classList.add('light-theme');
+        localStorage.setItem('scheduler-theme', 'light');
+        if (themeText) themeText.textContent = 'DARK';
       }
     });
   }
