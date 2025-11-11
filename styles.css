@@ -161,13 +161,13 @@ thead th.fixed-left, thead th.fixed-right{color:transparent;width:28px;min-width
 
 /* Multi-select helper icon in drag column header */
 thead th.fixed-left::after {
-  content: '⇅';
+  content: '☰';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   opacity: 0;
   transition: opacity 0.2s;
   pointer-events: none;
@@ -177,8 +177,36 @@ thead th.fixed-left:hover::after {
   opacity: 0.6;
 }
 
+/* Tooltip for drag column header */
+thead th.fixed-left::before {
+  content: 'Click to select row\AShift or ⌘+click for multiple';
+  white-space: pre;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  z-index: 1000;
+  min-width: 150px;
+  text-align: center;
+}
+
+thead th.fixed-left:hover::before {
+  opacity: 1;
+}
+
 thead th.fixed-left {
-  cursor: help;
   position: relative;
 }
 tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;user-select:none;}
@@ -537,8 +565,12 @@ thead th .formatBtn:hover {
   background: #f5f5f5;
   border-color: var(--accent);
 }
-/* Lighter background for all column headers and their buttons */
-thead th { background: #f5f7fa !important; color: #333 !important; }
+
+/* Light theme: lighter background for column headers */
+body.light-theme thead th { 
+  background: #f5f7fa !important; 
+  color: #333 !important; 
+}
 
 /* Column formatting cascades via CSS variables */
 td[style*="--col-bg"] input,
