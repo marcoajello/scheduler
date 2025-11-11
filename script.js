@@ -6101,31 +6101,47 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const fileNew = document.getElementById('fileNew');
   if (fileNew) {
     fileNew.addEventListener('click', () => {
-      if (confirm('Create new blank schedule? Current schedule will be saved first.')) {
-        // Autosave current schedule first
-        const provider = localStorage.getItem('currentCloudProvider') || 'local';
-        const currentFile = localStorage.getItem('currentCloudFile');
+      const currentFile = localStorage.getItem('currentCloudFile');
+      
+      if (!currentFile) {
+        // No current file - prompt to save first
+        if (confirm('Save current schedule before creating new one?')) {
+          const fileSaveAs = document.getElementById('fileSaveAs');
+          if (fileSaveAs) {
+            fileSaveAs.click();
+            // User will need to click NEW again after saving
+            alert('Please click NEW again after saving.');
+          }
+          return;
+        }
+      } else {
+        if (!confirm('Create new blank schedule? Current schedule will be saved first.')) {
+          return;
+        }
+      }
+      
+      // Autosave current schedule first if we have a cloud file
+      const provider = localStorage.getItem('currentCloudProvider') || 'local';
+      
+      if (currentFile) {
+        const state = readState();
         
-        if (currentFile) {
-          const state = readState();
-          
-          if (provider === 'supabase') {
-            if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
-              window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
-                clearAndReload();
-              });
-              return;
-            }
-          } else if (provider === 'dropbox') {
-            if (typeof window.saveToDropbox === 'function') {
-              window.saveToDropbox(state);
-            }
+        if (provider === 'supabase') {
+          if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+            window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
+              clearAndReload();
+            });
+            return;
+          }
+        } else if (provider === 'dropbox') {
+          if (typeof window.saveToDropbox === 'function') {
+            window.saveToDropbox(state);
           }
         }
-        
-        // If no cloud file or local mode, just clear immediately
-        clearAndReload();
       }
+      
+      // If no cloud file or local mode, just clear immediately
+      clearAndReload();
       
       function clearAndReload() {
         localStorage.removeItem('currentCloudFile');
@@ -6372,31 +6388,47 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const fileClose = document.getElementById('fileClose');
   if (fileClose) {
     fileClose.addEventListener('click', () => {
-      if (confirm('Close current schedule? Schedule will be saved first.')) {
-        // Autosave current schedule first
-        const provider = localStorage.getItem('currentCloudProvider') || 'local';
-        const currentFile = localStorage.getItem('currentCloudFile');
+      const currentFile = localStorage.getItem('currentCloudFile');
+      
+      if (!currentFile) {
+        // No current file - prompt to save first
+        if (confirm('Save current schedule before closing?')) {
+          const fileSaveAs = document.getElementById('fileSaveAs');
+          if (fileSaveAs) {
+            fileSaveAs.click();
+            // User will need to click CLOSE again after saving
+            alert('Please click CLOSE again after saving.');
+          }
+          return;
+        }
+      } else {
+        if (!confirm('Close current schedule? Schedule will be saved first.')) {
+          return;
+        }
+      }
+      
+      // Autosave current schedule first if we have a cloud file
+      const provider = localStorage.getItem('currentCloudProvider') || 'local';
+      
+      if (currentFile) {
+        const state = readState();
         
-        if (currentFile) {
-          const state = readState();
-          
-          if (provider === 'supabase') {
-            if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
-              window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
-                clearAndReload();
-              });
-              return;
-            }
-          } else if (provider === 'dropbox') {
-            if (typeof window.saveToDropbox === 'function') {
-              window.saveToDropbox(state);
-            }
+        if (provider === 'supabase') {
+          if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+            window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
+              clearAndReload();
+            });
+            return;
+          }
+        } else if (provider === 'dropbox') {
+          if (typeof window.saveToDropbox === 'function') {
+            window.saveToDropbox(state);
           }
         }
-        
-        // If no cloud file or local mode, just clear immediately
-        clearAndReload();
       }
+      
+      // If no cloud file or local mode, just clear immediately
+      clearAndReload();
       
       function clearAndReload() {
         localStorage.removeItem('currentCloudFile');
