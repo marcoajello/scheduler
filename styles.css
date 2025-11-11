@@ -179,7 +179,7 @@ thead th.fixed-left:hover::after {
 
 /* Tooltip for drag column header */
 thead th.fixed-left::before {
-  content: 'Click to select row\AShift or ⌘+click for multiple';
+  content: 'CLICK TO SELECT ROW\ASHIFT OR ⌘+CLICK FOR MULTIPLE';
   white-space: pre;
   position: absolute;
   top: 100%;
@@ -191,14 +191,14 @@ thead th.fixed-left::before {
   border-radius: 6px;
   font-size: 11px;
   line-height: 1.4;
-  margin-top: 8px;
+  margin-top: 4px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   border: 1px solid var(--border);
   z-index: 99999;
-  min-width: 160px;
+  min-width: 180px;
   text-align: center;
 }
 
