@@ -5,6 +5,39 @@ header .card, header details, header label, header h1, header h3, header h4, hea
 header details.card summary { font-size: 12px; }
 header .card, header details { margin-bottom: 8px; }
 
+/* File Menu Bar */
+.file-menu-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.file-menu-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+.file-menu-btn:hover {
+  background: var(--border);
+  color: var(--text);
+  filter: none;
+  opacity: 1;
+}
+.file-menu-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* Spacing for details inside metaSection */
 #metaSection details { margin-top: 10; margin-bottom: 10; }
 #metaSection details:last-child { margin-bottom: 10; }
