@@ -5872,7 +5872,9 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
     
     if (currentFile) {
       currentFileNameInput.value = currentFile.replace('.json', '');
-      fileProviderLabel.textContent = provider === 'dropbox' ? 'Dropbox file' : provider === 'supabase' ? 'Supabase file' : 'Local file';
+      if (fileProviderLabel) {
+        fileProviderLabel.textContent = provider === 'dropbox' ? 'Stored on Dropbox' : provider === 'supabase' ? 'Stored on Supabase' : 'Stored locally';
+      }
       
       // Update header display
       if (headerDisplay) {
@@ -5881,7 +5883,9 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
     } else {
       currentFileNameInput.value = '';
       currentFileNameInput.placeholder = 'Untitled Schedule';
-      fileProviderLabel.textContent = 'Not saved';
+      if (fileProviderLabel) {
+        fileProviderLabel.textContent = 'Not saved';
+      }
       
       // Update header display
       if (headerDisplay) {
