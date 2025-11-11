@@ -6133,8 +6133,9 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
         <p style="font-size: 13px; color: #6b7280; margin-bottom: 20px;">Choose where to open from:</p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <button id="openLocal" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Computer</button>
-          <button id="openSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Supabase</button>
           <button id="openDropbox" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Dropbox</button>
+          <button id="openSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open from Supabase</button>
+          <button id="openSample" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Open Sample Schedule</button>
           <button id="openCancel" style="padding: 12px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; margin-top: 8px;">Cancel</button>
         </div>
       `;
@@ -6143,6 +6144,21 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
       document.body.appendChild(modal);
       
       // Handle button clicks
+      document.getElementById('openSample').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        const resetBtn = document.getElementById('resetBtn');
+        if (resetBtn) {
+          resetBtn.click();
+        } else {
+          // Fallback if resetBtn doesn't exist
+          if (confirm('Load sample schedule? Any unsaved changes will be lost.')) {
+            localStorage.removeItem('currentCloudFile');
+            localStorage.removeItem('currentCloudProvider');
+            location.reload();
+          }
+        }
+      });
+      
       document.getElementById('openLocal').addEventListener('click', () => {
         document.body.removeChild(modal);
         const loadJsonBtn = document.getElementById('loadJsonBtn');
@@ -6261,8 +6277,9 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
         <p style="font-size: 13px; color: #6b7280; margin-bottom: 20px;">Choose where to save:</p>
         <div style="display: flex; flex-direction: column; gap: 8px;">
           <button id="saveAsLocal" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Computer</button>
-          <button id="saveAsSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Supabase</button>
           <button id="saveAsDropbox" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Dropbox</button>
+          <button id="saveAsSupabase" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save to Supabase</button>
+          <button id="saveAsCSV" style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Export CSV</button>
           <button id="saveAsCancel" style="padding: 12px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; margin-top: 8px;">Cancel</button>
         </div>
       `;
@@ -6287,6 +6304,16 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
         document.body.removeChild(modal);
         const saveToDropboxBtnMgr = document.getElementById('saveToDropboxBtnMgr');
         if (saveToDropboxBtnMgr) saveToDropboxBtnMgr.click();
+      });
+      
+      document.getElementById('saveAsCSV').addEventListener('click', () => {
+        document.body.removeChild(modal);
+        // Call CSVExporter function
+        if (window.CSVExporter && typeof window.CSVExporter.exportToCSV === 'function') {
+          window.CSVExporter.exportToCSV();
+        } else {
+          alert('CSV export not available');
+        }
       });
       
       document.getElementById('saveAsCancel').addEventListener('click', () => {
