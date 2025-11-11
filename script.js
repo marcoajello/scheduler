@@ -6007,7 +6007,6 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   }
   
   // Open from Supabase
-  // Open from Supabase
   const loadFromCloudBtnMgr = document.getElementById('loadFromCloudBtnMgr');
   if (loadFromCloudBtnMgr) {
     loadFromCloudBtnMgr.addEventListener('click', async () => {
@@ -6016,10 +6015,11 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
         return;
       }
       
-      // Trigger the hidden button that has the proper handler
-      const hiddenBtn = document.getElementById('loadFromCloudBtn');
-      if (hiddenBtn) {
-        hiddenBtn.click();
+      // Open the file browser modal directly
+      const browser = document.getElementById('fileBrowser');
+      if (browser) {
+        browser.style.display = 'flex';
+        await renderFileBrowser();
       } else {
         alert('File browser not available');
       }
