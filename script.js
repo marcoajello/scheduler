@@ -2701,7 +2701,6 @@ function addHeaderResizeGrips(){
         if(col.key==='drag'||col.key==='actions'){ 
           th.classList.add(col.key==='drag'?'fixed-left':'fixed-right'); 
           th.textContent='';
-          if(col.key==='drag') th.title='Click to select row\nShift+click to select multiple';
         }
         if(!col.fixed){ if(col.show===false) th.classList.add('col-hide'); if(col.print===false) th.classList.add('col-print-hide'); }
         theadRow.appendChild(th);
