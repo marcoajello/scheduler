@@ -24,7 +24,8 @@
       
       <div id="authForm">
         <input id="authEmail" type="email" placeholder="Email" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
-        <input id="authPassword" type="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
+        <input id="authPassword" type="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
+        <input id="authPasswordConfirm" type="password" placeholder="Confirm Password" style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px; display: none;" />
         
         <div style="display: flex; gap: 8px;">
           <button id="signInBtn" style="flex: 1; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Sign In</button>
@@ -379,6 +380,7 @@
       
       const authEmail = document.getElementById('authEmail');
       const authPassword = document.getElementById('authPassword');
+      const authPasswordConfirm = document.getElementById('authPasswordConfirm');
       const signInBtn = document.getElementById('signInBtn');
       const signUpBtn = document.getElementById('signUpBtn');
       const authError = document.getElementById('authError');
@@ -449,6 +451,8 @@
       }
       
       signInBtn.addEventListener('click', async () => {
+        authPasswordConfirm.style.display = 'none'; // Hide confirm field for sign in
+        
         const email = authEmail.value.trim();
         const password = authPassword.value;
         
@@ -470,8 +474,11 @@
       });
       
       signUpBtn.addEventListener('click', async () => {
+        authPasswordConfirm.style.display = 'block'; // Show confirm field for sign up
+        
         const email = authEmail.value.trim();
         const password = authPassword.value;
+        const passwordConfirm = authPasswordConfirm.value;
         
         if (!email || !password) {
           showAuthError('Please enter email and password');
@@ -480,6 +487,11 @@
         
         if (password.length < 6) {
           showAuthError('Password must be at least 6 characters');
+          return;
+        }
+        
+        if (password !== passwordConfirm) {
+          showAuthError('Passwords do not match');
           return;
         }
         
@@ -492,6 +504,7 @@
           showAuthSuccess('Account created! Please check your email to confirm.');
           authEmail.value = '';
           authPassword.value = '';
+          authPasswordConfirm.value = '';
         } else {
           showAuthError(result.error);
         }
