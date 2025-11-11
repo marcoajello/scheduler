@@ -191,14 +191,14 @@ thead th.fixed-left::before {
   border-radius: 6px;
   font-size: 11px;
   line-height: 1.4;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s;
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   border: 1px solid var(--border);
-  z-index: 1000;
-  min-width: 150px;
+  z-index: 99999;
+  min-width: 160px;
   text-align: center;
 }
 
@@ -208,6 +208,7 @@ thead th.fixed-left:hover::before {
 
 thead th.fixed-left {
   position: relative;
+  overflow: visible !important;
 }
 tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;user-select:none;}
 tbody tr{background:var(--row-bg, var(--row)); color: var(--row-fg, var(--text));}
