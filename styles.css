@@ -2,6 +2,7 @@
 :root { --bg:#0f1217; --panel:#1a1e25; --muted:#a0a7b4; --text:#eef2f8; --accent:#5aa0ff; --row:#161a20; --rowAlt:#151821; --border:#232832; --shadow:0 6px 20px rgba(0,0,0,0.35); --font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
 *{box-sizing:border-box;font-family:var(--font-family);} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 var(--font-family);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 header .card, header details, header label, header h1, header h3, header h4, header p, header span, header button, header summary { text-transform: uppercase; }
+header details.card summary { font-size: 12px; }
 header .card, header details { margin-bottom: 8px; }
 
 /* Spacing for details inside metaSection */
