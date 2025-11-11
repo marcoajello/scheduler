@@ -20,6 +20,7 @@
       <h2 style="margin: 0 0 24px 0; text-align: center; color: #1f2937;">Scheduler</h2>
       
       <div id="authError" style="display: none; padding: 12px; background: #fee; border: 1px solid #fcc; border-radius: 4px; margin-bottom: 16px; color: #c00; font-size: 14px;"></div>
+      <div id="authSuccess" style="display: none; padding: 12px; background: #d1fae5; border: 1px solid #86efac; border-radius: 4px; margin-bottom: 16px; color: #065f46; font-size: 14px;"></div>
       
       <div id="authForm">
         <input id="authEmail" type="email" placeholder="Email" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
@@ -381,6 +382,7 @@
       const signInBtn = document.getElementById('signInBtn');
       const signUpBtn = document.getElementById('signUpBtn');
       const authError = document.getElementById('authError');
+      const authSuccess = document.getElementById('authSuccess');
       const signOutBtn = document.getElementById('signOutBtn');
       const authStatus = document.getElementById('authStatus');
       
@@ -431,8 +433,18 @@
       function showAuthError(message) {
         authError.textContent = message;
         authError.style.display = 'block';
+        authSuccess.style.display = 'none'; // Hide success if showing error
         setTimeout(() => {
           authError.style.display = 'none';
+        }, 5000);
+      }
+      
+      function showAuthSuccess(message) {
+        authSuccess.textContent = message;
+        authSuccess.style.display = 'block';
+        authError.style.display = 'none'; // Hide error if showing success
+        setTimeout(() => {
+          authSuccess.style.display = 'none';
         }, 5000);
       }
       
@@ -477,7 +489,7 @@
         const result = await SupabaseAPI.auth.signUp(email, password);
         
         if (result.success) {
-          showAuthError('Account created! Please check your email to confirm.');
+          showAuthSuccess('Account created! Please check your email to confirm.');
           authEmail.value = '';
           authPassword.value = '';
         } else {
