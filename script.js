@@ -6101,21 +6101,40 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const fileNew = document.getElementById('fileNew');
   if (fileNew) {
     fileNew.addEventListener('click', () => {
-      if (confirm('Create new blank schedule? Any unsaved changes will be lost.')) {
-        // Clear file tracking
+      if (confirm('Create new blank schedule? Current schedule will be saved first.')) {
+        // Autosave current schedule first
+        const provider = localStorage.getItem('currentCloudProvider') || 'local';
+        const currentFile = localStorage.getItem('currentCloudFile');
+        
+        if (currentFile) {
+          const state = readState();
+          
+          if (provider === 'supabase') {
+            if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+              window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
+                clearAndReload();
+              });
+              return;
+            }
+          } else if (provider === 'dropbox') {
+            if (typeof window.saveToDropbox === 'function') {
+              window.saveToDropbox(state);
+            }
+          }
+        }
+        
+        // If no cloud file or local mode, just clear immediately
+        clearAndReload();
+      }
+      
+      function clearAndReload() {
         localStorage.removeItem('currentCloudFile');
         localStorage.removeItem('currentCloudProvider');
-        
-        // Clear the main schedule data
         localStorage.removeItem('shootScheduler_v8_10');
-        
-        // Clear undo/redo if they exist
         try {
           localStorage.removeItem('shootScheduler_v8_10_UNDO');
           localStorage.removeItem('shootScheduler_v8_10_REDO');
         } catch(_) { }
-        
-        // Reload to get fresh empty state
         location.reload();
       }
     });
@@ -6353,10 +6372,41 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   const fileClose = document.getElementById('fileClose');
   if (fileClose) {
     fileClose.addEventListener('click', () => {
-      if (confirm('Close current schedule? Any unsaved changes will be lost.')) {
+      if (confirm('Close current schedule? Schedule will be saved first.')) {
+        // Autosave current schedule first
+        const provider = localStorage.getItem('currentCloudProvider') || 'local';
+        const currentFile = localStorage.getItem('currentCloudFile');
+        
+        if (currentFile) {
+          const state = readState();
+          
+          if (provider === 'supabase') {
+            if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+              window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
+                clearAndReload();
+              });
+              return;
+            }
+          } else if (provider === 'dropbox') {
+            if (typeof window.saveToDropbox === 'function') {
+              window.saveToDropbox(state);
+            }
+          }
+        }
+        
+        // If no cloud file or local mode, just clear immediately
+        clearAndReload();
+      }
+      
+      function clearAndReload() {
         localStorage.removeItem('currentCloudFile');
         localStorage.removeItem('currentCloudProvider');
-        updateFileNameDisplay();
+        localStorage.removeItem('shootScheduler_v8_10');
+        try {
+          localStorage.removeItem('shootScheduler_v8_10_UNDO');
+          localStorage.removeItem('shootScheduler_v8_10_REDO');
+        } catch(_) { }
+        location.reload();
       }
     });
   }
