@@ -4,11 +4,11 @@ body.dark-theme { --bg:#0a0e13; --panel:#12171d; --muted:#9ca3af; --text:#f9fafb
 
 /* Dark theme: make header row and helper columns darker */
 body.dark-theme thead th {
-  background: #0a0e13 !important;
+  background: #12171d !important;
 }
 body.dark-theme tbody td[data-key="drag"],
 body.dark-theme tbody td[data-key="actions"] {
-  background: #0a0e13 !important;
+  background: #12171d !important;
 }
 
 *{box-sizing:border-box;font-family:var(--font-family);} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 var(--font-family);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -158,7 +158,30 @@ body:not(.dark-theme) .col-table select.colType,.col-table select.colAlign{backg
 
 thead th{position:relative;text-align:left;font-weight:700;color:var(--muted);background:var(--panel);padding:5px 10px;border-bottom:2px solid var(--border);user-select:none;overflow:visible;}
 thead th.fixed-left, thead th.fixed-right{color:transparent;width:28px;min-width:28px;max-width:28px;}
-tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+
+/* Multi-select helper icon in drag column header */
+thead th.fixed-left::after {
+  content: '⇅';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--muted);
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+thead th.fixed-left:hover::after {
+  opacity: 0.6;
+}
+
+thead th.fixed-left {
+  cursor: help;
+  position: relative;
+}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;user-select:none;}
 tbody tr{background:var(--row-bg, var(--row)); color: var(--row-fg, var(--text));}
 tbody tr:nth-child(even){background:var(--row-bg, var(--rowAlt));}
 tbody tr.call{background:var(--row-bg, var(--row)); color: var(--row-fg, var(--text));}
