@@ -33,7 +33,10 @@ window.openFromDropbox = function() {
         location.reload();
       } catch (error) {
         console.error('Error loading from Dropbox:', error);
-        alert('Failed to load file: ' + error.message);
+        // Delay alert to ensure Dropbox dialog closes first
+        setTimeout(() => {
+          alert('Failed to load file: ' + error.message);
+        }, 300);
       }
     },
     cancel: function() {
@@ -67,10 +70,16 @@ window.saveToDropbox = function(state) {
     success: function() {
       localStorage.setItem('currentCloudFile', fileName);
       localStorage.setItem('currentCloudProvider', 'dropbox');
-      alert('✓ Saved to Dropbox!');
+      // Delay alert to ensure Dropbox dialog closes first
+      setTimeout(() => {
+        alert('✓ Saved to Dropbox!');
+      }, 300);
     },
     error: function(errorMessage) {
-      alert('Failed to save: ' + errorMessage);
+      // Delay alert to ensure Dropbox dialog closes first
+      setTimeout(() => {
+        alert('Failed to save: ' + errorMessage);
+      }, 300);
     }
   });
 };
