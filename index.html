@@ -56,7 +56,6 @@
         <span id="headerFileDisplay" style="font-size: 12px; font-weight: 700; color: var(--text);"></span>
         <span id="authStatus" style="font-size: 11px; color: var(--muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; display: none;"></span>
         <button id="signOutBtn" class="ghost" style="display: none;">Sign Out</button>
-        <button id="resetBtn" class="ghost">Reset to Sample</button>
         <button id="themeToggle" class="ghost theme-toggle" title="Toggle light/dark theme">
           <span class="theme-text">LIGHT</span>
         </button>
@@ -134,53 +133,19 @@
           </div>
         </div>
       </details>
-      
-      <!-- FILE MANAGER -->
-      <details id="filePanel" class="card colpanel">
-        <summary>File Manager</summary>
-        <div class="file-wrap">
-          <!-- Current File Section -->
-          <div class="file-section">
-            <h4>Current File</h4>
-            <div class="file-name-row">
-              <input id="currentFileName" type="text" placeholder="Untitled Schedule" style="flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 4px;">
-              <button id="renameFileBtn" class="ghost">Rename</button>
-            </div>
-            <div style="margin-top: 8px; font-size: 11px; color: var(--muted);">
-              <span id="fileProviderLabel">Not saved</span>
-            </div>
-          </div>
-          
-          <!-- Local Files Section -->
-          <div class="file-section">
-            <h4>Local Files</h4>
-            <div class="file-buttons">
-              <button id="saveJsonBtn">Save JSON</button>
-              <button id="loadJsonBtn">Load JSON</button>
-            </div>
-          </div>
-          
-          <!-- Cloud Storage Section -->
-          <div class="file-section">
-            <h4>Cloud Storage</h4>
-            <div class="file-buttons">
-              <button id="saveToCloudBtnMgr">Save to Supabase</button>
-              <button id="loadFromCloudBtnMgr">Open from Supabase</button>
-              <button id="saveToDropboxBtnMgr">Save to Dropbox</button>
-              <button id="openFromDropboxBtnMgr">Open from Dropbox</button>
-            </div>
-          </div>
-          
-          <!-- Export Section -->
-          <div class="file-section">
-            <h4>Export</h4>
-            <div class="file-buttons">
-              <button id="exportCsvBtnMgr">Export CSV</button>
-            </div>
-          </div>
-        </div>
-      </details>
     </section>
+
+    <!-- Hidden buttons for file operations (triggered by file menu) -->
+    <div style="display: none;">
+      <input id="currentFileName" type="text" />
+      <span id="fileProviderLabel"></span>
+      <button id="saveJsonBtn"></button>
+      <button id="loadJsonBtn"></button>
+      <button id="saveToCloudBtnMgr"></button>
+      <button id="loadFromCloudBtnMgr"></button>
+      <button id="saveToDropboxBtnMgr"></button>
+      <button id="resetBtn"></button>
+    </div>
 
     <details id="palettePanel" class="card palette" style="display: none;">
       <summary>Global Color Palette</summary>
