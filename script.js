@@ -3873,10 +3873,21 @@ function addHeaderResizeGrips(){
       
       const metaTitle = document.getElementById('metaTitle')?.value || '';
       const metaVersion = document.getElementById('metaVersion')?.value || '';
-      const metaDate = document.getElementById('metaDate')?.value || '';
+      const metaDateRaw = document.getElementById('metaDate')?.value || '';
       const metaDow = document.getElementById('metaDow')?.value || '';
       const metaX = document.getElementById('metaX')?.value || '';
       const metaY = document.getElementById('metaY')?.value || '';
+      
+      // Format date as MM/DD/YYYY
+      let metaDate = '';
+      if (metaDateRaw) {
+        const d = new Date(metaDateRaw + 'T00:00:00');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const year = d.getFullYear();
+        metaDate = `${month}/${day}/${year}`;
+      }
+      
       const pdfImageHeight = localStorage.getItem('pdfImageHeight') || '150';
       
       // Get paper settings
@@ -3985,7 +3996,7 @@ function addHeaderResizeGrips(){
       }
       
       // Only show meta display if no header image
-      const metaDisplay = hasHeader ? '' : `${metaTitle} v.${metaVersion} • ${metaDate} ${metaDow} • Day ${metaX} of ${metaY}`;
+      const metaDisplay = hasHeader ? '' : `${metaTitle} v.${metaVersion} • ${metaDow} ${metaDate} • Day ${metaX} of ${metaY}`;
       
       // Build clean colgroup
       let colGroupHTML = '<colgroup>';
