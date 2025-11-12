@@ -705,6 +705,8 @@
           imageData: ev.target.result,
           fontSize: 16,
           fontWeight: 'normal',
+          fontStyle: 'normal',
+          textDecoration: 'none',
           fontFamily: "'Century Gothic', 'AppleGothic', sans-serif",
           color: '#000000',
           bgColor: 'transparent',
@@ -802,6 +804,8 @@
       imageData: imageData || '',
       fontSize: type === 'calltimes' ? 11 : 16,
       fontWeight: 'normal',
+      fontStyle: 'normal',
+      textDecoration: 'none',
       fontFamily: "'Century Gothic', 'AppleGothic', sans-serif",
       color: '#000000',
       bgColor: 'transparent',
@@ -917,9 +921,11 @@
     
     if (element.type === 'text') {
       const vAlign = element.verticalAlign === 'top' ? 'flex-start' : element.verticalAlign === 'bottom' ? 'flex-end' : 'center';
+      const fontStyle = element.fontStyle || 'normal';
+      const textDecoration = element.textDecoration || 'none';
       
-      content = `<div class="hd-text" style="font-size:${element.fontSize}px;font-weight:${element.fontWeight};font-family:${element.fontFamily};color:${element.color};text-align:${element.textAlign};justify-content:${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'};align-items:${vAlign};">
-        <textarea class="hd-text-editable" style="text-align:${element.textAlign};font-weight:${element.fontWeight};font-family:${element.fontFamily};color:${element.color};" rows="1">${textContent}</textarea>
+      content = `<div class="hd-text" style="font-size:${element.fontSize}px;font-weight:${element.fontWeight};font-style:${fontStyle};text-decoration:${textDecoration};font-family:${element.fontFamily};color:${element.color};text-align:${element.textAlign};justify-content:${element.textAlign === 'center' ? 'center' : element.textAlign === 'right' ? 'flex-end' : 'flex-start'};align-items:${vAlign};">
+        <textarea class="hd-text-editable" style="text-align:${element.textAlign};font-weight:${element.fontWeight};font-style:${fontStyle};text-decoration:${textDecoration};font-family:${element.fontFamily};color:${element.color};" rows="1">${textContent}</textarea>
       </div>`;
     } else if (element.type === 'image') {
       if (element.imageData) {
@@ -1611,10 +1617,16 @@
             <input type="number" class="hd-prop-input" data-prop="fontSize" value="${element.fontSize}" min="8" max="72" style="width: 50px;">
           </div>
           <div class="hd-prop-field">
-            <span class="hd-prop-label">Wgt</span>
-            <select class="hd-prop-input" data-prop="fontWeight" style="width: 70px;">
-              <option value="normal" ${element.fontWeight === 'normal' ? 'selected' : ''}>Norm</option>
-              <option value="bold" ${element.fontWeight === 'bold' ? 'selected' : ''}>Bold</option>
+            <span class="hd-prop-label">Style</span>
+            <select class="hd-prop-input" data-prop="textStyle" style="width: 110px;">
+              <option value="normal-normal-none" ${(element.fontWeight || 'normal') === 'normal' && (element.fontStyle || 'normal') === 'normal' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Normal</option>
+              <option value="bold-normal-none" ${element.fontWeight === 'bold' && (element.fontStyle || 'normal') === 'normal' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Bold</option>
+              <option value="normal-italic-none" ${(element.fontWeight || 'normal') === 'normal' && element.fontStyle === 'italic' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Italic</option>
+              <option value="bold-italic-none" ${element.fontWeight === 'bold' && element.fontStyle === 'italic' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Bold Italic</option>
+              <option value="normal-normal-underline" ${(element.fontWeight || 'normal') === 'normal' && (element.fontStyle || 'normal') === 'normal' && element.textDecoration === 'underline' ? 'selected' : ''}>Underline</option>
+              <option value="bold-normal-underline" ${element.fontWeight === 'bold' && (element.fontStyle || 'normal') === 'normal' && element.textDecoration === 'underline' ? 'selected' : ''}>Bold Under</option>
+              <option value="normal-italic-underline" ${(element.fontWeight || 'normal') === 'normal' && element.fontStyle === 'italic' && element.textDecoration === 'underline' ? 'selected' : ''}>Italic Under</option>
+              <option value="bold-italic-underline" ${element.fontWeight === 'bold' && element.fontStyle === 'italic' && element.textDecoration === 'underline' ? 'selected' : ''}>Bold Ital Under</option>
             </select>
           </div>
           <div class="hd-prop-field">
@@ -2046,12 +2058,45 @@
           if (callTimesDiv) {
             callTimesDiv.style.color = value;
           }
+        } else if (prop === 'textStyle') {
+          // Parse combined style value: "weight-style-decoration"
+          const [weight, style, decoration] = value.split('-');
+          element.fontWeight = weight;
+          element.fontStyle = style;
+          element.textDecoration = decoration;
+          
+          const textDiv = el.querySelector('.hd-text, .hd-meta');
+          if (textDiv) {
+            textDiv.style.fontWeight = weight;
+            textDiv.style.fontStyle = style;
+            textDiv.style.textDecoration = decoration;
+            const textarea = textDiv.querySelector('.hd-text-editable');
+            if (textarea) {
+              textarea.style.fontWeight = weight;
+              textarea.style.fontStyle = style;
+              textarea.style.textDecoration = decoration;
+            }
+          }
         } else if (prop === 'fontWeight') {
           const textDiv = el.querySelector('.hd-text, .hd-meta');
           if (textDiv) {
             textDiv.style.fontWeight = value;
             const textarea = textDiv.querySelector('.hd-text-editable');
             if (textarea) textarea.style.fontWeight = value;
+          }
+        } else if (prop === 'fontStyle') {
+          const textDiv = el.querySelector('.hd-text, .hd-meta');
+          if (textDiv) {
+            textDiv.style.fontStyle = value;
+            const textarea = textDiv.querySelector('.hd-text-editable');
+            if (textarea) textarea.style.fontStyle = value;
+          }
+        } else if (prop === 'textDecoration') {
+          const textDiv = el.querySelector('.hd-text, .hd-meta');
+          if (textDiv) {
+            textDiv.style.textDecoration = value;
+            const textarea = textDiv.querySelector('.hd-text-editable');
+            if (textarea) textarea.style.textDecoration = value;
           }
         } else if (prop === 'fontFamily') {
           const textDiv = el.querySelector('.hd-text, .hd-meta');
@@ -2561,7 +2606,9 @@
           ctx.fillStyle = elem.color || '#000000';
           // CRITICAL: Scale font size by scale factor
           const scaledFontSize = elem.fontSize * scale;
-          ctx.font = `${elem.bold ? 'bold ' : ''}${scaledFontSize}px ${elem.fontFamily || 'Arial'}`;
+          const fontWeight = elem.fontWeight || 'normal';
+          const fontStyle = elem.fontStyle || 'normal';
+          ctx.font = `${fontStyle} ${fontWeight} ${scaledFontSize}px ${elem.fontFamily || 'Arial'}`;
           
           // Set text alignment
           const textAlign = elem.textAlign || 'left';
@@ -2595,6 +2642,27 @@
           }
           
           ctx.fillText(textToRender, textX, textY);
+          
+          // Draw underline if textDecoration is underline
+          if (elem.textDecoration === 'underline') {
+            const metrics = ctx.measureText(textToRender);
+            const underlineY = textY + scaledFontSize * 0.1; // Position underline slightly below baseline
+            let underlineX = textX;
+            
+            if (textAlign === 'center') {
+              underlineX = textX - metrics.width / 2;
+            } else if (textAlign === 'right') {
+              underlineX = textX - metrics.width;
+            }
+            
+            ctx.beginPath();
+            ctx.moveTo(underlineX, underlineY);
+            ctx.lineTo(underlineX + metrics.width, underlineY);
+            ctx.lineWidth = Math.max(1, scaledFontSize * 0.05);
+            ctx.strokeStyle = elem.color || '#000000';
+            ctx.stroke();
+          }
+          
           console.log('✓ Text drawn:', textToRender.substring(0, 50), 'at scaled fontSize:', scaledFontSize);
         } 
         else if (elem.type === 'image' && elem.imageData) {
@@ -2785,7 +2853,9 @@
           
           // Set up text rendering - scale font size
           const scaledFontSize = elem.fontSize * scale;
-          ctx.font = `${elem.bold ? 'bold ' : ''}${scaledFontSize}px ${elem.fontFamily || 'Arial'}`;
+          const fontWeight = elem.fontWeight || 'normal';
+          const fontStyle = elem.fontStyle || 'normal';
+          ctx.font = `${fontStyle} ${fontWeight} ${scaledFontSize}px ${elem.fontFamily || 'Arial'}`;
           ctx.fillStyle = elem.color || '#000000';
           
           // Use alphabetic baseline for consistent text positioning
