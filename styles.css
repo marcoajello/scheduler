@@ -213,8 +213,7 @@ tbody td.fixed-right {
 .drag-column-tooltip.show {
   opacity: 1;
 }
-  overflow: visible !important;
-}
+
 tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;user-select:none;}
 tbody tr{background:var(--row-bg, var(--row)); color: var(--row-fg, var(--text));}
 tbody tr:nth-child(even){background:var(--row-bg, var(--rowAlt));}
