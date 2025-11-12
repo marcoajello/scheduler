@@ -177,14 +177,13 @@ thead th.fixed-left:hover::after {
   opacity: 0.6;
 }
 
-/* Tooltip for drag column header */
-thead th.fixed-left::before {
-  content: 'CLICK TO SELECT ROW\ASHIFT OR ⌘+CLICK FOR MULTIPLE';
-  white-space: pre;
-  position: absolute;
-  top: 100%;
-  left: 100%;
-  transform: translate(-100%, 0);
+thead th.fixed-left {
+  position: relative;
+}
+
+/* JavaScript-based tooltip */
+.drag-column-tooltip {
+  position: fixed;
   background: var(--panel);
   color: var(--text);
   padding: 8px 12px;
@@ -192,23 +191,20 @@ thead th.fixed-left::before {
   font-size: 11px;
   font-weight: 400;
   line-height: 1.4;
-  margin-top: 4px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   border: 1px solid var(--border);
-  z-index: 999999;
+  z-index: 9999999;
   min-width: 180px;
   text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: pre-line;
 }
 
-thead th.fixed-left:hover::before {
+.drag-column-tooltip.show {
   opacity: 1;
 }
-
-thead th.fixed-left {
-  position: relative;
   overflow: visible !important;
 }
 tbody td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;user-select:none;}
