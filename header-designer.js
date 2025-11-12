@@ -2688,9 +2688,18 @@
           // Draw underline if textDecoration is underline
           if (elem.textDecoration === 'underline') {
             const metrics = ctx.measureText(textToRender);
-            const underlineY = textY + scaledFontSize * 0.1; // Position underline slightly below baseline
-            let underlineX = textX;
             
+            // Calculate underline Y based on textBaseline
+            let underlineY;
+            if (ctx.textBaseline === 'middle') {
+              underlineY = textY + scaledFontSize * 0.4; // Below middle
+            } else if (ctx.textBaseline === 'top') {
+              underlineY = textY + scaledFontSize * 0.9; // Below top
+            } else {
+              underlineY = textY + scaledFontSize * 0.1; // Below alphabetic baseline
+            }
+            
+            let underlineX = textX;
             if (textAlign === 'center') {
               underlineX = textX - metrics.width / 2;
             } else if (textAlign === 'right') {
