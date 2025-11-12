@@ -4262,12 +4262,32 @@ function addHeaderResizeGrips(){
                 
                 // Extract ALL visual properties from the input for PDF
                 const computedStyle = window.getComputedStyle(titleInput);
-                const fontSize = computedStyle.fontSize;
-                const fontFamily = computedStyle.fontFamily;
-                const fontWeight = computedStyle.fontWeight;
-                const fontStyle = computedStyle.fontStyle;
-                const textDecoration = computedStyle.textDecoration;
-                const textAlign = computedStyle.textAlign;
+                let fontSize = computedStyle.fontSize;
+                let fontFamily = computedStyle.fontFamily;
+                let fontWeight = computedStyle.fontWeight;
+                let fontStyle = computedStyle.fontStyle;
+                let textDecoration = computedStyle.textDecoration;
+                let textAlign = computedStyle.textAlign;
+                
+                // Fallback to row-level formatting if cell doesn't have explicit formatting
+                if (!fontFamily || fontFamily === 'inherit' || fontFamily.includes('system-ui')) {
+                  fontFamily = rowFontFamily;
+                }
+                if (!fontSize || fontSize === 'inherit') {
+                  fontSize = rowFontSize;
+                }
+                if (fontWeight === 'normal' || fontWeight === '400') {
+                  if (rowBold) fontWeight = 'bold';
+                }
+                if (fontStyle === 'normal') {
+                  if (rowItalic) fontStyle = 'italic';
+                }
+                if (textDecoration === 'none') {
+                  if (rowUnderline) textDecoration = 'underline';
+                }
+                if (!textAlign || textAlign === 'start' || textAlign === 'left') {
+                  textAlign = rowAlign;
+                }
                 
                 // Extract border properties
                 const borderRadius = computedStyle.borderRadius;
@@ -4355,12 +4375,32 @@ function addHeaderResizeGrips(){
                   const cellStyle = window.getComputedStyle(cell);
                   const inputStyle = window.getComputedStyle(input);
                   
-                  const fontSize = inputStyle.fontSize;
-                  const fontFamily = inputStyle.fontFamily;
-                  const fontWeight = inputStyle.fontWeight;
-                  const fontStyle = inputStyle.fontStyle;
-                  const textDecoration = inputStyle.textDecoration;
-                  const textAlign = inputStyle.textAlign;
+                  let fontSize = inputStyle.fontSize;
+                  let fontFamily = inputStyle.fontFamily;
+                  let fontWeight = inputStyle.fontWeight;
+                  let fontStyle = inputStyle.fontStyle;
+                  let textDecoration = inputStyle.textDecoration;
+                  let textAlign = inputStyle.textAlign;
+                  
+                  // Fallback to row-level formatting if cell doesn't have explicit formatting
+                  if (!fontFamily || fontFamily === 'inherit' || fontFamily.includes('system-ui')) {
+                    fontFamily = rowFontFamily;
+                  }
+                  if (!fontSize || fontSize === 'inherit') {
+                    fontSize = rowFontSize;
+                  }
+                  if (fontWeight === 'normal' || fontWeight === '400') {
+                    if (rowBold) fontWeight = 'bold';
+                  }
+                  if (fontStyle === 'normal') {
+                    if (rowItalic) fontStyle = 'italic';
+                  }
+                  if (textDecoration === 'none') {
+                    if (rowUnderline) textDecoration = 'underline';
+                  }
+                  if (!textAlign || textAlign === 'start' || textAlign === 'left') {
+                    textAlign = rowAlign;
+                  }
                   
                   // Extract border properties from input
                   const borderRadius = inputStyle.borderRadius;
@@ -6493,6 +6533,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Find the drag column header
   const dragHeader = document.querySelector('thead th.fixed-left');
   if (!dragHeader) return;
+  
+  // Click to select all rows
+  dragHeader.addEventListener('click', () => {
+    const allRows = document.querySelectorAll('tbody tr[data-id]');
+    allRows.forEach(tr => {
+      if (!tr.classList.contains('selected')) {
+        tr.classList.add('selected');
+      }
+    });
+  });
   
   dragHeader.addEventListener('mouseenter', () => {
     const rect = dragHeader.getBoundingClientRect();
