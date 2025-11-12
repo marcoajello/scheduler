@@ -501,14 +501,13 @@
     
     if (isTextarea) {
       const textarea = e.target;
-      const hasTextSelection = textarea.selectionStart !== textarea.selectionEnd;
       const isReadonly = textarea.hasAttribute('readonly');
       
-      // If user is actively selecting text in the textarea, let browser handle it
-      if (hasTextSelection && !isReadonly) {
+      // If textarea is editable, always let browser handle copy/paste/cut
+      if (!isReadonly) {
         return;
       }
-      // Otherwise, allow our shortcuts (for readonly or no selection)
+      // If readonly, allow our shortcuts to work (for copying header elements)
     } else if (isInput || isSelect) {
       // For regular inputs and selects, don't intercept
       return;
