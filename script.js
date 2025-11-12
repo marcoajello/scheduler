@@ -2150,12 +2150,21 @@ function addHeaderResizeGrips(){
               <option value="">Default</option>
               <option value="Arial, sans-serif">Arial</option>
               <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+              <option value="'Century Gothic', 'AppleGothic', sans-serif">Century Gothic</option>
+              <option value="'Futura', 'Trebuchet MS', sans-serif">Futura</option>
+              <option value="'Avenir', 'Century Gothic', sans-serif">Avenir</option>
+              <option value="'Franklin Gothic Medium', sans-serif">Franklin Gothic</option>
+              <option value="'Gill Sans', 'Gill Sans MT', sans-serif">Gill Sans</option>
               <option value="'Times New Roman', Times, serif">Times New Roman</option>
               <option value="Georgia, serif">Georgia</option>
+              <option value="Garamond, serif">Garamond</option>
               <option value="'Courier New', Courier, monospace">Courier New</option>
+              <option value="'Consolas', 'Monaco', monospace">Consolas</option>
               <option value="Verdana, sans-serif">Verdana</option>
               <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
               <option value="Impact, sans-serif">Impact</option>
+              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+              <option value="'Brush Script MT', cursive">Brush Script</option>
             </select>
           </div>
           
@@ -2371,15 +2380,21 @@ function addHeaderResizeGrips(){
           const isControlColumn = key === 'drag' || key === 'idx' || key === 'actions';
           
           if (!isControlColumn) {
-            if (formatting.fontFamily) td.style.fontFamily = formatting.fontFamily;
-            else td.style.fontFamily = '';
+            if (formatting.fontFamily) {
+              td.style.setProperty('font-family', formatting.fontFamily, 'important');
+            } else {
+              td.style.removeProperty('font-family');
+            }
             
-            if (formatting.fontSize) td.style.fontSize = formatting.fontSize;
-            else td.style.fontSize = '';
+            if (formatting.fontSize) {
+              td.style.setProperty('font-size', formatting.fontSize, 'important');
+            } else {
+              td.style.removeProperty('font-size');
+            }
             
-            td.style.fontWeight = formatting.bold ? 'bold' : '';
-            td.style.fontStyle = formatting.italic ? 'italic' : '';
-            td.style.textDecoration = formatting.underline ? 'underline' : '';
+            td.style.setProperty('font-weight', formatting.bold ? 'bold' : 'normal', 'important');
+            td.style.setProperty('font-style', formatting.italic ? 'italic' : 'normal', 'important');
+            td.style.setProperty('text-decoration', formatting.underline ? 'underline' : 'none', 'important');
           }
           
           // Apply alignment to text cells (not drag or actions)
@@ -2390,14 +2405,20 @@ function addHeaderResizeGrips(){
         
         // Also apply to inputs and text areas in the row
         element.querySelectorAll('input[type="text"], input.title, input.subTitle, textarea').forEach(input => {
-          if (formatting.fontFamily) input.style.fontFamily = formatting.fontFamily;
-          else input.style.fontFamily = '';
+          if (formatting.fontFamily) {
+            input.style.setProperty('font-family', formatting.fontFamily, 'important');
+          } else {
+            input.style.removeProperty('font-family');
+          }
           
-          if (formatting.fontSize) input.style.fontSize = formatting.fontSize;
-          else input.style.fontSize = '';
+          if (formatting.fontSize) {
+            input.style.setProperty('font-size', formatting.fontSize, 'important');
+          } else {
+            input.style.removeProperty('font-size');
+          }
           
-          input.style.fontWeight = formatting.bold ? 'bold' : '';
-          input.style.fontStyle = formatting.italic ? 'italic' : '';
+          input.style.setProperty('font-weight', formatting.bold ? 'bold' : 'normal', 'important');
+          input.style.setProperty('font-style', formatting.italic ? 'italic' : 'normal', 'important');
           input.style.textDecoration = formatting.underline ? 'underline' : '';
         });
         
@@ -3181,6 +3202,11 @@ function addHeaderResizeGrips(){
       
       // Add click handler for multi-select (on index cell to not interfere with inputs)
       // Multi-row selection on drag handle
+      cells.drag.addEventListener('mousedown', (e) => {
+        if (e.shiftKey || e.metaKey || e.ctrlKey) {
+          e.preventDefault(); // Prevent text selection on shift+click
+        }
+      });
       cells.drag.addEventListener('click', (e) => {
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
           e.preventDefault();
