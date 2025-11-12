@@ -2755,12 +2755,12 @@ function addHeaderResizeGrips(){
             // Apply visual styles to textarea
             const textarea = td.querySelector('textarea');
             if (textarea && cellFormatting) {
-              if (cellFormatting.fontFamily) textarea.style.fontFamily = cellFormatting.fontFamily;
-              if (cellFormatting.fontSize) textarea.style.fontSize = cellFormatting.fontSize;
-              if (cellFormatting.bold) textarea.style.fontWeight = 'bold';
-              if (cellFormatting.italic) textarea.style.fontStyle = 'italic';
-              if (cellFormatting.underline) textarea.style.textDecoration = 'underline';
-              if (cellFormatting.align) textarea.style.textAlign = cellFormatting.align;
+              if (cellFormatting.fontFamily) textarea.style.setProperty('font-family', cellFormatting.fontFamily, 'important');
+              if (cellFormatting.fontSize) textarea.style.setProperty('font-size', cellFormatting.fontSize, 'important');
+              if (cellFormatting.bold) textarea.style.setProperty('font-weight', 'bold', 'important');
+              if (cellFormatting.italic) textarea.style.setProperty('font-style', 'italic', 'important');
+              if (cellFormatting.underline) textarea.style.setProperty('text-decoration', 'underline', 'important');
+              if (cellFormatting.align) textarea.style.setProperty('text-align', cellFormatting.align, 'important');
               // Apply colors with !important flag to override CSS
               if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
                 textarea.style.setProperty('color', cellFormatting.fgColor, 'important');
