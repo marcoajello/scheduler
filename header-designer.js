@@ -601,7 +601,7 @@
     const canvas = document.getElementById('headerCanvas');
     if (canvas) {
       const maxX = canvas.clientWidth - newElement.width;
-      const maxY = CANVAS_HEIGHT - newElement.height;
+      const maxY = canvasHeight - newElement.height;
       if (newElement.x > maxX) newElement.x = 20;
       if (newElement.y > maxY) newElement.y = 20;
     }
@@ -722,8 +722,8 @@
         if (newElement.x + newElement.width > canvas.clientWidth) {
           newElement.x = canvas.clientWidth - newElement.width;
         }
-        if (newElement.y + newElement.height > CANVAS_HEIGHT) {
-          newElement.y = CANVAS_HEIGHT - newElement.height;
+        if (newElement.y + newElement.height > canvasHeight) {
+          newElement.y = canvasHeight - newElement.height;
         }
         
         layout.elements.push(newElement);
@@ -842,7 +842,7 @@
       return;
     }
     
-    selectedElement.y = (CANVAS_HEIGHT - selectedElement.height) / 2;
+    selectedElement.y = (canvasHeight - selectedElement.height) / 2;
     selectedElement.y = Math.round(selectedElement.y / GRID_SIZE) * GRID_SIZE;
     
     const el = document.querySelector(`[data-id="${selectedElement.id}"]`);
@@ -1617,17 +1617,22 @@
             <input type="number" class="hd-prop-input" data-prop="fontSize" value="${element.fontSize}" min="8" max="72" style="width: 50px;">
           </div>
           <div class="hd-prop-field">
-            <span class="hd-prop-label">Style</span>
-            <select class="hd-prop-input" data-prop="textStyle" style="width: 110px;">
-              <option value="normal-normal-none" ${(element.fontWeight || 'normal') === 'normal' && (element.fontStyle || 'normal') === 'normal' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Normal</option>
-              <option value="bold-normal-none" ${element.fontWeight === 'bold' && (element.fontStyle || 'normal') === 'normal' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Bold</option>
-              <option value="normal-italic-none" ${(element.fontWeight || 'normal') === 'normal' && element.fontStyle === 'italic' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Italic</option>
-              <option value="bold-italic-none" ${element.fontWeight === 'bold' && element.fontStyle === 'italic' && (element.textDecoration || 'none') === 'none' ? 'selected' : ''}>Bold Italic</option>
-              <option value="normal-normal-underline" ${(element.fontWeight || 'normal') === 'normal' && (element.fontStyle || 'normal') === 'normal' && element.textDecoration === 'underline' ? 'selected' : ''}>Underline</option>
-              <option value="bold-normal-underline" ${element.fontWeight === 'bold' && (element.fontStyle || 'normal') === 'normal' && element.textDecoration === 'underline' ? 'selected' : ''}>Bold Under</option>
-              <option value="normal-italic-underline" ${(element.fontWeight || 'normal') === 'normal' && element.fontStyle === 'italic' && element.textDecoration === 'underline' ? 'selected' : ''}>Italic Under</option>
-              <option value="bold-italic-underline" ${element.fontWeight === 'bold' && element.fontStyle === 'italic' && element.textDecoration === 'underline' ? 'selected' : ''}>Bold Ital Under</option>
-            </select>
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="checkbox" class="hd-prop-checkbox" data-prop="fontWeight" ${element.fontWeight === 'bold' ? 'checked' : ''}>
+              <span class="hd-prop-label" style="margin: 0;">Bold</span>
+            </label>
+          </div>
+          <div class="hd-prop-field">
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="checkbox" class="hd-prop-checkbox" data-prop="fontStyle" ${element.fontStyle === 'italic' ? 'checked' : ''}>
+              <span class="hd-prop-label" style="margin: 0;">Italic</span>
+            </label>
+          </div>
+          <div class="hd-prop-field">
+            <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+              <input type="checkbox" class="hd-prop-checkbox" data-prop="textDecoration" ${element.textDecoration === 'underline' ? 'checked' : ''}>
+              <span class="hd-prop-label" style="margin: 0;">Under</span>
+            </label>
           </div>
           <div class="hd-prop-field">
             <span class="hd-prop-label">Fam</span>
@@ -2176,6 +2181,43 @@
           saveHeaderLayout(layout);
         });
       }
+    });
+    
+    // Checkbox listeners for Bold, Italic, Underline
+    props.querySelectorAll('.hd-prop-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const prop = e.target.dataset.prop;
+        const isChecked = e.target.checked;
+        
+        let value;
+        if (prop === 'fontWeight') {
+          value = isChecked ? 'bold' : 'normal';
+        } else if (prop === 'fontStyle') {
+          value = isChecked ? 'italic' : 'normal';
+        } else if (prop === 'textDecoration') {
+          value = isChecked ? 'underline' : 'none';
+        }
+        
+        element[prop] = value;
+        
+        const el = document.querySelector(`[data-id="${element.id}"]`);
+        if (!el) return;
+        
+        const textDiv = el.querySelector('.hd-text, .hd-meta');
+        if (textDiv) {
+          textDiv.style[prop] = value;
+          const textarea = textDiv.querySelector('.hd-text-editable');
+          if (textarea) textarea.style[prop] = value;
+        }
+        
+        // Save immediately
+        const layout = getHeaderLayout();
+        const idx = layout.elements.findIndex(el => el.id === element.id);
+        if (idx !== -1) {
+          layout.elements[idx] = element;
+        }
+        saveHeaderLayout(layout);
+      });
     });
   }
   
