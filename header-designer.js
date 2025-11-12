@@ -1616,19 +1616,15 @@
             <span class="hd-prop-label">Size</span>
             <input type="number" class="hd-prop-input" data-prop="fontSize" value="${element.fontSize}" min="8" max="72" style="width: 50px;">
           </div>
-          <div class="hd-prop-field">
+          <div class="hd-prop-field" style="display: flex; gap: 12px;">
             <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
               <input type="checkbox" class="hd-prop-checkbox" data-prop="fontWeight" ${element.fontWeight === 'bold' ? 'checked' : ''}>
               <span class="hd-prop-label" style="margin: 0;">Bold</span>
             </label>
-          </div>
-          <div class="hd-prop-field">
             <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
               <input type="checkbox" class="hd-prop-checkbox" data-prop="fontStyle" ${element.fontStyle === 'italic' ? 'checked' : ''}>
               <span class="hd-prop-label" style="margin: 0;">Italic</span>
             </label>
-          </div>
-          <div class="hd-prop-field">
             <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
               <input type="checkbox" class="hd-prop-checkbox" data-prop="textDecoration" ${element.textDecoration === 'underline' ? 'checked' : ''}>
               <span class="hd-prop-label" style="margin: 0;">Under</span>
