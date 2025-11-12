@@ -179,6 +179,14 @@ thead th.fixed-left:hover::after {
 
 thead th.fixed-left {
   position: relative;
+  user-select: none;
+}
+
+/* Drag column cells - prevent text selection */
+tbody td.fixed-left,
+tbody td.fixed-right {
+  user-select: none !important;
+  cursor: pointer;
 }
 
 /* JavaScript-based tooltip */
@@ -746,6 +754,7 @@ table.schedule {
   table-layout: fixed !important; 
   /* Remove width: auto to prevent column auto-compensation */
   position: relative;
+  margin-bottom: 100px; /* Add space at bottom so FAB doesn't obscure last rows */
 }
 table.schedule th, table.schedule td { box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
 
