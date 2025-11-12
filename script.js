@@ -6444,3 +6444,31 @@ document.getElementById('printColConfirm')?.addEventListener('click', () => {
   }
 
 })();
+
+// Drag column header tooltip
+document.addEventListener('DOMContentLoaded', () => {
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.className = 'drag-column-tooltip';
+  tooltip.textContent = 'CLICK TO SELECT ROW\nSHIFT OR ⌘+CLICK FOR MULTIPLE';
+  document.body.appendChild(tooltip);
+  
+  // Find the drag column header
+  const dragHeader = document.querySelector('thead th.fixed-left');
+  if (!dragHeader) return;
+  
+  dragHeader.addEventListener('mouseenter', () => {
+    const rect = dragHeader.getBoundingClientRect();
+    
+    // Position below and to the right of the header
+    tooltip.style.top = (rect.bottom + 4) + 'px';
+    tooltip.style.left = (rect.left) + 'px';
+    
+    // Show tooltip
+    tooltip.classList.add('show');
+  });
+  
+  dragHeader.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('show');
+  });
+});
