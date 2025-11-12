@@ -533,7 +533,7 @@ tr.row.selected td.drag{
 .tags-value{display:none;}
 
 /* Popovers (color pickers) */
-.popover{position:fixed;z-index:99999;width:280px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;}
+.popover{position:fixed;z-index:999999999;width:280px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;}
 .format-popover{width:320px;max-height:500px;overflow-y:auto;background:var(--panel);color:var(--text);}
 .popover.is-open{display:block;}
 .pop-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;color:var(--text);font-weight:600;}
