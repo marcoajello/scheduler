@@ -1632,16 +1632,24 @@
           </div>
           <div class="hd-prop-field">
             <span class="hd-prop-label">Fam</span>
-            <select class="hd-prop-input" data-prop="fontFamily" style="width: 100px;">
-              <option value="'Century Gothic', 'AppleGothic', sans-serif" ${!element.fontFamily || element.fontFamily === "'Century Gothic', 'AppleGothic', sans-serif" ? 'selected' : ''}>Cent</option>
+            <select class="hd-prop-input" data-prop="fontFamily" style="width: 110px;">
+              <option value="'Century Gothic', 'AppleGothic', sans-serif" ${!element.fontFamily || element.fontFamily === "'Century Gothic', 'AppleGothic', sans-serif" ? 'selected' : ''}>Century</option>
               <option value="Arial, sans-serif" ${element.fontFamily === 'Arial, sans-serif' ? 'selected' : ''}>Arial</option>
-              <option value="'Courier New', monospace" ${element.fontFamily === "'Courier New', monospace" ? 'selected' : ''}>Cour</option>
-              <option value="Georgia, serif" ${element.fontFamily === 'Georgia, serif' ? 'selected' : ''}>Georg</option>
+              <option value="'Helvetica Neue', Helvetica, sans-serif" ${element.fontFamily === "'Helvetica Neue', Helvetica, sans-serif" ? 'selected' : ''}>Helvetica</option>
+              <option value="'Futura', 'Trebuchet MS', sans-serif" ${element.fontFamily === "'Futura', 'Trebuchet MS', sans-serif" ? 'selected' : ''}>Futura</option>
+              <option value="'Avenir', 'Century Gothic', sans-serif" ${element.fontFamily === "'Avenir', 'Century Gothic', sans-serif" ? 'selected' : ''}>Avenir</option>
+              <option value="'Franklin Gothic Medium', sans-serif" ${element.fontFamily === "'Franklin Gothic Medium', sans-serif" ? 'selected' : ''}>Franklin</option>
+              <option value="'Gill Sans', 'Gill Sans MT', sans-serif" ${element.fontFamily === "'Gill Sans', 'Gill Sans MT', sans-serif" ? 'selected' : ''}>Gill Sans</option>
               <option value="'Times New Roman', serif" ${element.fontFamily === "'Times New Roman', serif" ? 'selected' : ''}>Times</option>
-              <option value="Verdana, sans-serif" ${element.fontFamily === 'Verdana, sans-serif' ? 'selected' : ''}>Verd</option>
-              <option value="'Trebuchet MS', sans-serif" ${element.fontFamily === "'Trebuchet MS', sans-serif" ? 'selected' : ''}>Treb</option>
-              <option value="'Comic Sans MS', cursive" ${element.fontFamily === "'Comic Sans MS', cursive" ? 'selected' : ''}>Comic</option>
+              <option value="Georgia, serif" ${element.fontFamily === 'Georgia, serif' ? 'selected' : ''}>Georgia</option>
+              <option value="Garamond, serif" ${element.fontFamily === 'Garamond, serif' ? 'selected' : ''}>Garamond</option>
+              <option value="'Courier New', monospace" ${element.fontFamily === "'Courier New', monospace" ? 'selected' : ''}>Courier</option>
+              <option value="'Consolas', 'Monaco', monospace" ${element.fontFamily === "'Consolas', 'Monaco', monospace" ? 'selected' : ''}>Consolas</option>
+              <option value="Verdana, sans-serif" ${element.fontFamily === 'Verdana, sans-serif' ? 'selected' : ''}>Verdana</option>
+              <option value="'Trebuchet MS', sans-serif" ${element.fontFamily === "'Trebuchet MS', sans-serif" ? 'selected' : ''}>Trebuchet</option>
               <option value="Impact, sans-serif" ${element.fontFamily === 'Impact, sans-serif' ? 'selected' : ''}>Impact</option>
+              <option value="'Comic Sans MS', cursive" ${element.fontFamily === "'Comic Sans MS', cursive" ? 'selected' : ''}>Comic Sans</option>
+              <option value="'Brush Script MT', cursive" ${element.fontFamily === "'Brush Script MT', cursive" ? 'selected' : ''}>Brush</option>
               <option value="inherit" ${element.fontFamily === 'inherit' ? 'selected' : ''}>System</option>
             </select>
           </div>
