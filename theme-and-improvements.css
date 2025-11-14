@@ -42,9 +42,9 @@ body.light-theme tbody tr {
   background: var(--row-bg, var(--row));
 }
 
-body.light-theme tbody tr:nth-child(even) {
+/* body.light-theme tbody tr:nth-child(even) {
   background: var(--row-bg, var(--rowAlt));
-}
+} */ /* Disabled - no alternating colors */
 
 body.light-theme tbody tr.subheader {
   background: var(--sub-bg, #e2e8f0) !important;
@@ -234,15 +234,22 @@ body.light-theme small.muted {
   color: #718096 !important;
 }
 
-/* Fix button text - always white on blue buttons */
+/* Fix button text - blue styling all around */
 body.light-theme button {
-  color: white;
   background: var(--accent);
+  color: white;
+  border: none;
 }
 
 body.light-theme button.ghost {
-  color: white;
   background: var(--accent);
+  color: white;
+  border: none;
+}
+
+body.light-theme button:hover {
+  filter: brightness(1.1);
+  opacity: 0.95;
 }
 
 /* Column format button exception - white background */
@@ -289,9 +296,11 @@ body.light-theme summary {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 8px 14px;
-  background: transparent;
-  border: 1px solid var(--border);
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
   cursor: pointer;
   border-radius: 8px;
   display: flex;
@@ -301,8 +310,8 @@ body.light-theme summary {
 }
 
 .theme-toggle:hover {
-  background: var(--row);
-  border-color: var(--accent);
+  filter: brightness(1.1);
+  opacity: 0.95;
 }
 
 .theme-text {
