@@ -23,16 +23,16 @@
 }
 
 .hd-btn {
-  padding: 6px 10px;
+  padding: 6px 12px;
   background: var(--accent);
   color: white;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 
 .hd-btn:hover {
@@ -207,7 +207,7 @@
   font-size: 12px;
   font-style: italic;
   border: 2px dashed var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .hd-image-drop-zone.drag-over {
@@ -288,7 +288,7 @@
   font-size: 11px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
   color: var(--text);
   transition: all 0.2s;
@@ -333,7 +333,7 @@ body.light-theme .hd-element.selected {
   justify-content: center;
   background: var(--bg-alt);
   border: 1px dashed var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   box-sizing: border-box;
 }
 
@@ -352,7 +352,7 @@ body.light-theme .hd-element.selected {
   gap: 0;
   font-size: 11px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -397,7 +397,7 @@ body.light-theme .hd-element.selected {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 8px;
   padding: 3px 5px;
   font-size: 11px;
   height: 24px;
