@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scheduler</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20251113142200" />
   <link rel="stylesheet" href="./theme-and-improvements.css" />
   <link rel="stylesheet" href="./header-designer.css" />
   <link rel="stylesheet" href="./print-styles.css" />
@@ -28,12 +28,12 @@
         <input id="authPasswordConfirm" type="password" placeholder="Confirm Password" style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px; display: none;" />
         
         <div style="display: flex; gap: 8px;">
-          <button id="signInBtn" style="flex: 1; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Sign In</button>
-          <button id="signUpBtn" style="flex: 1; padding: 12px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; font-weight: 500;">Sign Up</button>
+          <button id="signInBtn" style="flex: 1; padding: 6px 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Sign In</button>
+          <button id="signUpBtn" class="ghost">Sign Up</button>
         </div>
         
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-          <button id="useLocallyBtn" style="padding: 12px 24px; background: white; color: #1f2937; border: 1px solid #d1d5db; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 500;">Use Locally (No Account)</button>
+          <button id="useLocallyBtn" class="ghost" style="width: 100%;">Use Locally (No Account)</button>
           <p style="margin-top: 12px; font-size: 11px; color: #6b7280;">
             Works offline, saves to this device only. No media uploads.
           </p>
@@ -53,8 +53,8 @@
     <div class="header-top">
       <h1>SCHEDULER</h1>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <span id="headerFileDisplay" style="font-size: 12px; font-weight: 700; color: var(--text);"></span>
-        <span id="authStatus" style="font-size: 11px; color: var(--muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; display: none;"></span>
+        <span id="headerFileDisplay" style="font-size: 12px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;"></span>
+        <span id="authStatus" style="font-size: 12px; color: var(--muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; display: none; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"></span>
         <button id="signOutBtn" class="ghost" style="display: none;">Sign Out</button>
         <button id="themeToggle" class="ghost theme-toggle" title="Toggle light/dark theme">
           <span class="theme-text">LIGHT</span>
@@ -118,7 +118,6 @@
                 <tr>
                   <th>Column</th>
                   <th>Type</th>
-                  <th>Align</th>
                   <th>Show</th>
                   <th>Print</th>
                   <th></th>
@@ -173,16 +172,19 @@
 
   <main class="container">
     <div class="controls">
-      <label style="font-size: 12px; text-transform: uppercase; color: var(--muted);">
+      <label style="font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">
         Schedule Start (Call Time):
-        <input id="scheduleStart" type="time" step="60" value="08:00">
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <input id="scheduleStart" type="text" pattern="[0-9]{1,2}:[0-9]{2}( [AP]M)?" placeholder="8:00 AM" value="8:00 AM" maxlength="8" style="width: 90px;">
+          <button id="timeFormatToggle" class="ghost compact" title="Toggle 12h/24h time format">12h</button>
+        </div>
       </label>
-      <button id="undoBtn" class="ghost">Undo</button>
-      <button id="redoBtn" class="ghost">Redo</button>
+      <button id="undoBtn" class="ghost compact">Undo</button>
+      <button id="redoBtn" class="ghost compact">Redo</button>
       <div class="grow"></div>
       <label style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 12px; text-transform: uppercase; color: var(--muted);">Zoom:</span>
-        <select id="zoomControl" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text);">
+        <span style="font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">Zoom:</span>
+        <select id="zoomControl" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);">
           <option value="0.5">50%</option>
           <option value="0.67">67%</option>
           <option value="0.75">75%</option>
@@ -193,12 +195,12 @@
         </select>
       </label>
       <label style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 12px; text-transform: uppercase; color: var(--muted);">Image Height:</span>
-        <input id="imageHeightControl" type="number" min="30" max="300" value="80" step="10" style="width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text);">
-        <span style="font-size: 11px; color: var(--muted);">px</span>
+        <span style="font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">Image Height:</span>
+        <input id="imageHeightControl" type="number" min="30" max="300" value="80" step="10" style="width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);">
+        <span style="font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">px</span>
       </label>
-      <button id="pageGuidesBtn" title="Show/hide Letter size page boundaries">Page Guides</button>
-      <button id="printBtn">Print</button>
+      <button id="pageGuidesBtn" class="compact" title="Show/hide Letter size page boundaries">Page Guides</button>
+      <button id="printBtn" class="compact">Print</button>
     </div>
     
     <!-- Print Settings Modal -->
@@ -254,7 +256,7 @@
         <!-- Header -->
         <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
           <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">Open Schedule from Cloud</h3>
-          <button id="closeFileBrowser" style="background: none; border: none; font-size: 24px; color: #6b7280; cursor: pointer; padding: 0; width: 32px; height: 32px;">×</button>
+          <button id="closeFileBrowser" class="close-btn">×</button>
         </div>
         
         <!-- File List -->
@@ -279,7 +281,7 @@
         <p style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">File will be saved to your cloud storage. Existing files with the same name will be overwritten.</p>
         <div style="display: flex; gap: 8px; justify-content: flex-end;">
           <button id="saveCancelBtn" class="ghost">Cancel</button>
-          <button id="saveConfirmBtn" style="background: #2563eb; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">Save</button>
+          <button id="saveConfirmBtn" class="primary">Save</button>
         </div>
       </div>
     </div>
@@ -292,7 +294,7 @@
         <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">This action cannot be undone.</p>
         <div style="display: flex; gap: 8px; justify-content: flex-end;">
           <button id="deleteConfirmCancel" class="ghost">Cancel</button>
-          <button id="deleteConfirmYes" style="background: #ef4444; color: white;">Delete</button>
+          <button id="deleteConfirmYes" class="danger">Delete</button>
         </div>
       </div>
     </div>
@@ -341,7 +343,7 @@
   <style id="printDynamic"></style>
   
   <script src="supabase-client.js"></script>
-  <script src="script.js?v=20251102233000"></script>
+  <script src="script.js?v=20251113142200"></script>
   <script src="csv-exporter.js"></script>
   <script src="header-designer.js"></script>
   
@@ -512,5 +514,6 @@
   
   <!-- Dropbox integration -->
   <script src="dropbox-chooser.js"></script>
+  
 </body>
 </html>
