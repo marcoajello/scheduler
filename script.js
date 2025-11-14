@@ -117,7 +117,9 @@ document.getElementById('metaDate')?.addEventListener('input', () => {
   updateHeaderDisplay();
   
   // Save date to current day
-  saveDayData();
+  if (typeof saveDayData === 'function') {
+    saveDayData();
+  }
   
   // Trigger header designer metadata update
   if (window.updateHeaderMetadata) {
@@ -299,6 +301,517 @@ document.addEventListener("DOMContentLoaded", updateHeaderDisplay);
     
     // === Multi-select drag system ===
     let selectedRows = new Set();
+    window.selectedRows = selectedRows; // Make accessible for select-all handler
+    
+    // === Excel-style Selection System ===
+    const SelectionManager = {
+      selectedCells: new Set(),
+      selectionType: null, // 'cell', 'row', 'column', 'mixed'
+      lastSelectedCell: null,
+      isSelecting: false,
+      
+      clear() {
+        console.log('[SelectionManager.clear] Clearing', this.selectedCells.size, 'cells - Stack trace:');
+        console.trace();
+        this.selectedCells.forEach(cell => cell.classList.remove('cell-selected'));
+        this.selectedCells.clear();
+        this.selectionType = null;
+        this.lastSelectedCell = null;
+      },
+      
+      selectCell(td, addToSelection = false) {
+        if (!addToSelection) {
+          this.clear();
+        }
+        
+        if (td.dataset.key === 'drag' || td.dataset.key === 'actions') {
+          return; // Don't select control columns
+        }
+        
+        this.selectedCells.add(td);
+        td.classList.add('cell-selected');
+        this.lastSelectedCell = td;
+        this.selectionType = 'cell';
+        console.log('[SelectionManager] Selected', this.selectedCells.size, 'cells, type:', this.selectionType);
+        this.updateFormatPanel();
+      },
+      
+      selectRow(tr, addToSelection = false) {
+        console.log('[SelectionManager] selectRow called, addToSelection:', addToSelection);
+        
+        if (!addToSelection) {
+          this.clear();
+        }
+        
+        const cells = tr.querySelectorAll('td:not([data-key="drag"]):not([data-key="actions"])');
+        console.log('[SelectionManager] Found', cells.length, 'cells in row');
+        
+        cells.forEach(cell => {
+          this.selectedCells.add(cell);
+          cell.classList.add('cell-selected');
+        });
+        
+        this.lastSelectedCell = cells[0];
+        this.selectionType = 'row';
+        console.log('[SelectionManager] Selected', this.selectedCells.size, 'cells, type:', this.selectionType);
+        this.updateFormatPanel();
+      },
+      
+      selectColumn(key, addToSelection = false) {
+        console.log('[SelectionManager] selectColumn called:', key, 'addToSelection:', addToSelection);
+        
+        if (!addToSelection) {
+          this.clear();
+        }
+        
+        // Get the main tbody and only select cells in data rows
+        const tbody = document.getElementById('tbody');
+        if (!tbody) {
+          console.error('[SelectionManager] Could not find tbody');
+          return;
+        }
+        
+        const dataRows = tbody.querySelectorAll('tr[data-id]');
+        console.log('[SelectionManager] Found', dataRows.length, 'data rows');
+        
+        dataRows.forEach(row => {
+          const cell = row.querySelector(`td[data-key="${key}"]`);
+          if (cell) {
+            this.selectedCells.add(cell);
+            cell.classList.add('cell-selected');
+          }
+        });
+        
+        this.lastSelectedCell = this.selectedCells.values().next().value;
+        this.selectionType = 'column';
+        this.updateFormatPanel();
+        
+        console.log('[SelectionManager] Column selection complete, total cells:', this.selectedCells.size);
+      },
+      
+      selectRange(startCell, endCell) {
+        console.log('[SelectionManager] selectRange from', startCell.dataset.key, 'to', endCell.dataset.key);
+        this.clear();
+        
+        // Get tbody from the actual cells
+        const tbody = startCell.closest('tbody');
+        if (!tbody) {
+          console.error('[SelectionManager] Could not find tbody from start cell');
+          return;
+        }
+        
+        const allRows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+        const allCols = Array.from(document.querySelectorAll('thead th')).map(th => th.dataset.key).filter(k => k);
+        
+        const startRowElement = startCell.closest('tr');
+        const endRowElement = endCell.closest('tr');
+        
+        console.log('[SelectionManager] Start row:', startRowElement, 'in tbody?', tbody.contains(startRowElement));
+        console.log('[SelectionManager] End row:', endRowElement, 'in tbody?', tbody.contains(endRowElement));
+        console.log('[SelectionManager] Total rows in tbody:', allRows.length);
+        
+        const startRow = allRows.indexOf(startRowElement);
+        const endRow = allRows.indexOf(endRowElement);
+        const startCol = allCols.indexOf(startCell.dataset.key);
+        const endCol = allCols.indexOf(endCell.dataset.key);
+        
+        // Validate indices
+        if (startRow === -1 || endRow === -1) {
+          console.error('[SelectionManager] Invalid row - cell not in table');
+          return;
+        }
+        if (startCol === -1 || endCol === -1) {
+          console.error('[SelectionManager] Invalid column - cell key not found');
+          return;
+        }
+        
+        const minRow = Math.min(startRow, endRow);
+        const maxRow = Math.max(startRow, endRow);
+        const minCol = Math.min(startCol, endCol);
+        const maxCol = Math.max(startCol, endCol);
+        
+        console.log('[SelectionManager] Range: rows', minRow, '-', maxRow, 'cols', minCol, '-', maxCol);
+        
+        for (let r = minRow; r <= maxRow; r++) {
+          // Bounds check
+          if (r < 0 || r >= allRows.length) continue;
+          
+          for (let c = minCol; c <= maxCol; c++) {
+            if (c < 0 || c >= allCols.length) continue;
+            
+            const key = allCols[c];
+            if (!key || key === 'drag' || key === 'actions') continue;
+            
+            const cell = allRows[r].querySelector(`td[data-key="${key}"]`);
+            if (cell) {
+              this.selectedCells.add(cell);
+              cell.classList.add('cell-selected');
+            }
+          }
+        }
+        
+        console.log('[SelectionManager] Selected', this.selectedCells.size, 'cells in range');
+        this.selectionType = 'cell';
+        this.updateFormatPanel();
+      },
+      
+      selectRangeByIndices(tbody, startRowIndex, startColKey, endRowIndex, endColKey) {
+        console.log('[SelectionManager] selectRangeByIndices:', startRowIndex, startColKey, 'to', endRowIndex, endColKey);
+        this.clear();
+        
+        if (!tbody) {
+          console.error('[SelectionManager] No tbody provided');
+          return;
+        }
+        
+        // Only get actual data rows with data-id attribute
+        const allRows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+        const allCols = Array.from(document.querySelectorAll('thead th')).map(th => th.dataset.key).filter(k => k);
+        
+        console.log('[SelectionManager] Total data rows:', allRows.length, 'Total cols:', allCols.length);
+        
+        const startCol = allCols.indexOf(startColKey);
+        const endCol = allCols.indexOf(endColKey);
+        
+        // Validate indices
+        if (startRowIndex < 0 || startRowIndex >= allRows.length || endRowIndex < 0 || endRowIndex >= allRows.length) {
+          console.error('[SelectionManager] Invalid row indices:', startRowIndex, endRowIndex, 'max:', allRows.length);
+          return;
+        }
+        if (startCol === -1 || endCol === -1) {
+          console.error('[SelectionManager] Invalid column keys:', startColKey, endColKey);
+          return;
+        }
+        
+        const minRow = Math.min(startRowIndex, endRowIndex);
+        const maxRow = Math.max(startRowIndex, endRowIndex);
+        const minCol = Math.min(startCol, endCol);
+        const maxCol = Math.max(startCol, endCol);
+        
+        console.log('[SelectionManager] Selecting rows', minRow, '-', maxRow, 'cols', minCol, '-', maxCol);
+        
+        // Debug: check first cell
+        if (allRows[minRow]) {
+          const firstKey = allCols[minCol];
+          console.log('[SelectionManager] DEBUG: Looking for first cell with key:', firstKey);
+          console.log('[SelectionManager] DEBUG: First row has', allRows[minRow].querySelectorAll('td').length, 'td elements');
+          const testCell = allRows[minRow].querySelector(`td[data-key="${firstKey}"]`);
+          console.log('[SelectionManager] DEBUG: Found cell?', !!testCell);
+          if (!testCell) {
+            // Check what data-key values exist
+            const keys = Array.from(allRows[minRow].querySelectorAll('td')).map(td => td.dataset.key);
+            console.log('[SelectionManager] DEBUG: Available data-key values:', keys);
+          }
+        }
+        
+        for (let r = minRow; r <= maxRow; r++) {
+          for (let c = minCol; c <= maxCol; c++) {
+            const key = allCols[c];
+            if (!key || key === 'drag' || key === 'actions') continue;
+            
+            const cell = allRows[r].querySelector(`td[data-key="${key}"]`);
+            if (cell) {
+              this.selectedCells.add(cell);
+              cell.classList.add('cell-selected');
+            }
+          }
+        }
+        
+        console.log('[SelectionManager] Selected', this.selectedCells.size, 'cells');
+        this.selectionType = 'cell';
+        this.updateFormatPanel();
+      },
+      
+      updateFormatPanel() {
+        // Update the format panel UI to show current formatting of selection
+        console.log('[Selection] Updating format panel for', this.selectedCells.size, 'cells, type:', this.selectionType);
+        
+        if (this.selectedCells.size === 0) {
+          // No selection - reset to defaults
+          const textColorPicker = document.getElementById('textColorPicker');
+          const bgColorPicker = document.getElementById('bgColorPicker');
+          if (textColorPicker) textColorPicker.value = '#000000';
+          if (bgColorPicker) bgColorPicker.value = '#ffffff';
+          return;
+        }
+        
+        // Get first selected cell to read formatting
+        const firstCell = Array.from(this.selectedCells)[0];
+        if (!firstCell) return;
+        
+        // Read from cell dataset first, then fall back to computed style
+        let fgColor = firstCell.dataset.cellFg || '';
+        let bgColor = firstCell.dataset.cellBg || '';
+        
+        // If no dataset values, try computed styles
+        if (!fgColor || !bgColor) {
+          const computedStyle = window.getComputedStyle(firstCell);
+          if (!fgColor) fgColor = computedStyle.color;
+          if (!bgColor) bgColor = computedStyle.backgroundColor;
+        }
+        
+        // Convert rgb() to hex if needed
+        const rgbToHex = (rgb) => {
+          if (!rgb || rgb === 'transparent') return null;
+          if (rgb.startsWith('#')) return rgb;
+          const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+          if (!match) return null;
+          const hex = (x) => ("0" + parseInt(x).toString(16)).slice(-2);
+          return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);
+        };
+        
+        const hexFg = rgbToHex(fgColor) || '#000000';
+        const hexBg = rgbToHex(bgColor) || '#ffffff';
+        
+        // Update color pickers
+        const textColorPicker = document.getElementById('textColorPicker');
+        const bgColorPicker = document.getElementById('bgColorPicker');
+        
+        if (textColorPicker) textColorPicker.value = hexFg;
+        if (bgColorPicker) bgColorPicker.value = hexBg;
+        
+        console.log('[Selection] Updated color pickers - fg:', hexFg, 'bg:', hexBg);
+      },
+      
+      getSelection() {
+        return Array.from(this.selectedCells);
+      },
+      
+      getSelectionType() {
+        return this.selectionType;
+      },
+      
+      getSelectedCells() {
+        return Array.from(this.selectedCells);
+      }
+    };
+    
+    window.SelectionManager = SelectionManager;
+    
+    // Add cell selection handlers (runs immediately since script is at end of body)
+    (() => {
+      console.log('[Selection Setup] Starting handler setup...');
+      const tbody = document.getElementById('tbody');
+      const thead = document.querySelector('thead');
+      console.log('[Selection Setup] tbody:', tbody, 'thead:', thead);
+      let dragStartPosition = null; // Store {rowIndex, colKey} instead of DOM element
+      
+      // Cell click handler
+      if (tbody) {
+        // Add click handler to stop click events from drag column
+        tbody.addEventListener('click', (e) => {
+          const td = e.target.closest('td');
+          if (td && td.dataset.key === 'drag') {
+            console.log('[Selection] Stopping drag column click event');
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+          }
+        }, true); // Capture phase
+        
+        tbody.addEventListener('mousedown', (e) => {
+          const td = e.target.closest('td');
+          console.log('[Selection] tbody mousedown, td:', td, 'key:', td?.dataset.key);
+          if (!td) return;
+          
+          // Skip if clicking on input/textarea/button/select
+          if (e.target.matches('input, textarea, button, select')) {
+            console.log('[Selection] Skipping - clicked on input/textarea/button/select');
+            return;
+          }
+          
+          // ROW SELECTION: Click on drag column selects entire row
+          // BUT: Allow drag to start if mouse moves
+          if (td.dataset.key === 'drag') {
+            console.log('[Selection] DRAG COLUMN CLICKED');
+            
+            const row = td.closest('tr');
+            if (!row) {
+              console.error('[Selection] No row found for drag cell');
+              return;
+            }
+            
+            let isDragging = false;
+            let startX = e.clientX;
+            let startY = e.clientY;
+            
+            const onMouseMove = (moveEvent) => {
+              // If mouse moves more than 5px, it's a drag, not a click
+              const deltaX = Math.abs(moveEvent.clientX - startX);
+              const deltaY = Math.abs(moveEvent.clientY - startY);
+              
+              if (deltaX > 5 || deltaY > 5) {
+                isDragging = true;
+                // Remove listeners - let native drag take over
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+              }
+            };
+            
+            const onMouseUp = () => {
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+              
+              // Only select row if it was a click, not a drag
+              if (!isDragging) {
+                e.preventDefault();
+                const isAddToSelection = e.metaKey || e.ctrlKey;
+                console.log('[Selection] Calling selectRow, addToSelection:', isAddToSelection);
+                SelectionManager.selectRow(row, isAddToSelection);
+                console.log('[Selection] Row selected');
+              }
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            return;
+          }
+          
+          // Skip actions column for cell selection
+          if (td.dataset.key === 'actions') return;
+          
+          console.log('[Selection] Cell mousedown:', td.dataset.key);
+          
+          // Disable row dragging during cell selection
+          const row = td.closest('tr');
+          if (row) {
+            row.draggable = false;
+          }
+          
+          const isAddToSelection = e.metaKey || e.ctrlKey;
+          const isRangeSelect = e.shiftKey;
+          
+          // Prevent text selection
+          e.preventDefault();
+          
+          if (isRangeSelect && SelectionManager.lastSelectedCell) {
+            console.log('[Selection] Shift+click range select');
+            SelectionManager.selectRange(SelectionManager.lastSelectedCell, td);
+          } else if (!isAddToSelection) {
+            // Start potential drag selection - store position, not element
+            const tbody = td.closest('tbody');
+            if (!tbody) return;
+            
+            const allRows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+            const rowIndex = allRows.indexOf(td.closest('tr'));
+            
+            console.log('[Selection] Found', allRows.length, 'data rows, clicked row index:', rowIndex);
+            
+            dragStartPosition = {
+              tbody: tbody,  // Store tbody reference
+              rowIndex: rowIndex,
+              colKey: td.dataset.key
+            };
+            SelectionManager.isSelecting = true;
+            tbody.classList.add('selecting');
+            
+            // Select this cell immediately
+            SelectionManager.selectCell(td, isAddToSelection);
+          } else {
+            // Cmd/Ctrl+click - add to selection
+            SelectionManager.selectCell(td, isAddToSelection);
+          }
+        });
+        
+        tbody.addEventListener('mousemove', (e) => {
+          if (!SelectionManager.isSelecting || !dragStartPosition) return;
+          
+          const td = e.target.closest('td');
+          if (!td) return;
+          if (td.dataset.key === 'drag' || td.dataset.key === 'actions') return;
+          
+          console.log('[Selection] Dragging to:', td.dataset.key);
+          
+          // Use the tbody from drag start to ensure consistency
+          const tbody = dragStartPosition.tbody;
+          if (!tbody) return;
+          
+          // Get current position
+          const allRows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+          const currentRowIndex = allRows.indexOf(td.closest('tr'));
+          
+          if (currentRowIndex === -1) return; // Can't find current row
+          
+          // Use indices to select range
+          SelectionManager.selectRangeByIndices(
+            tbody,
+            dragStartPosition.rowIndex,
+            dragStartPosition.colKey,
+            currentRowIndex,
+            td.dataset.key
+          );
+        });
+        
+        document.addEventListener('mouseup', () => {
+          if (SelectionManager.isSelecting) {
+            console.log('[Selection] Drag ended');
+          }
+          SelectionManager.isSelecting = false;
+          
+          // Re-enable row dragging using stored tbody reference
+          if (dragStartPosition && dragStartPosition.tbody) {
+            dragStartPosition.tbody.querySelectorAll('tr[data-type]').forEach(row => {
+              row.draggable = true;
+            });
+          }
+          
+          dragStartPosition = null;
+          
+          // Remove selecting class from all tbody elements
+          document.querySelectorAll('tbody').forEach(tb => tb.classList.remove('selecting'));
+        });
+        
+        console.log('[Selection Setup] Cell handlers attached to tbody');
+      } else {
+        console.error('[Selection Setup] tbody not found!');
+      }
+      
+      // Column header click handler - use delegation to survive header rebuilds
+      const table = document.querySelector('#scheduleTable');
+      if (table) {
+        table.addEventListener('click', (e) => {
+          console.log('[Column Selection] Table click:', e.target, 'tagName:', e.target.tagName);
+          
+          // Check if click is on a th in thead
+          const inThead = e.target.closest('thead');
+          console.log('[Column Selection] In thead?', !!inThead);
+          if (!inThead) return;
+          
+          const th = e.target.closest('th');
+          console.log('[Column Selection] Found th?', !!th, 'key:', th?.dataset.key);
+          if (!th || !th.dataset.key) {
+            console.log('[Column Selection] Rejected - no th or no dataset.key');
+            return;
+          }
+          
+          // Skip control columns
+          if (th.dataset.key === 'drag' || th.dataset.key === 'actions') {
+            console.log('[Column Selection] Skipping control column:', th.dataset.key);
+            return;
+          }
+          
+          console.log('[Column Selection] Selecting column:', th.dataset.key);
+          e.stopPropagation();
+          
+          const isAddToSelection = e.metaKey || e.ctrlKey;
+          SelectionManager.selectColumn(th.dataset.key, isAddToSelection);
+          
+          // Visual feedback on header
+          if (!isAddToSelection) {
+            document.querySelectorAll('th.column-selected').forEach(h => h.classList.remove('column-selected'));
+          }
+          th.classList.add('column-selected');
+        });
+        
+        console.log('[Selection Setup] Column handlers attached to table');
+      } else {
+        console.error('[Selection Setup] table not found!');
+      }
+      
+      console.log('[Selection Setup] Handler setup complete');
+    })(); // End selection handlers IIFE
+    
     
     function toggleRowSelection(tr, isShift = false) {
       if (tr.classList.contains('subchild')) return; // Don't multi-select sub-children
@@ -328,14 +841,18 @@ document.addEventListener("DOMContentLoaded", updateHeaderDisplay);
     }
     
     function clearSelection() {
+      console.log('[clearSelection] CLEARING SELECTION - Stack trace:');
+      console.trace();
       selectedRows.forEach(tr => tr.classList.remove('selected'));
       selectedRows.clear();
+      SelectionManager.clear();
     }
     
     // Click outside tbody to clear selection
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('tbody') && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      if (!e.target.closest('tbody') && !e.target.closest('thead') && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
         clearSelection();
+        document.querySelectorAll('th.column-selected').forEach(h => h.classList.remove('column-selected'));
       }
     });
     
@@ -381,6 +898,13 @@ document.addEventListener("DOMContentLoaded", updateHeaderDisplay);
       if (e.key.toLowerCase()==='z'){ e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
       if (e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
     });
+    
+    // ESC to clear selection
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        clearSelection();
+      }
+    });
     const scheduleStart=qs('#scheduleStart'), saveBtn=qs('#saveBtn'), loadBtn=qs('#loadBtn'), loadInput=qs('#loadInput'), printBtn=qs('#printBtn');
 
     // Meta
@@ -408,9 +932,45 @@ try{const __ps=readState(); if(__ps.print&&__ps.print.useDesigner){ writeState({
     // Utils
     function cid(){return 'c_'+Math.random().toString(36).slice(2,8);} function uid(){return 'r_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);}
     function pad(n){return String(n).padStart(2,'0');}
-    function toMinutes(hhmm){if(!hhmm)return 0; const [h,m]=hhmm.split(':').map(Number); return h*60+m;}
+    function toMinutes(hhmm){
+      if(!hhmm)return 0; 
+      // Handle both "8:00" and "8:00 AM" formats
+      const cleanTime = hhmm.replace(/\s*(AM|PM)\s*$/i, '');
+      const [h,m]=cleanTime.split(':').map(Number); 
+      // If original had PM and wasn't 12, add 12 hours
+      if(/PM$/i.test(hhmm) && h !== 12) {
+        return (h + 12) * 60 + m;
+      }
+      // If original had AM and was 12, convert to 0
+      if(/AM$/i.test(hhmm) && h === 12) {
+        return m;
+      }
+      return h*60+m;
+    }
     function minutesToHHMM(mins){mins=((mins%(1440))+1440)%1440;const h=Math.floor(mins/60);const m=mins%60;return `${pad(h)}:${pad(m)}`;}
     function hhmmToAmPm(x){const [h0,m]=x.split(':').map(Number);const ap=h0<12?'AM':'PM';let h=h0%12; if(h===0)h=12; return `${h}:${pad(m)} ${ap}`;}
+    
+    // Time format preference
+    function getTimeFormat() {
+      return localStorage.getItem('timeFormat') || '12h';
+    }
+    function setTimeFormat(format) {
+      localStorage.setItem('timeFormat', format);
+    }
+    
+    // Universal time formatter that respects user preference
+    function formatTime(hhmm) {
+      const format = getTimeFormat();
+      if (format === '24h') {
+        // 24-hour format: just return HH:MM
+        const [h, m] = hhmm.split(':').map(Number);
+        return `${h}:${pad(m)}`;
+      } else {
+        // 12-hour format: convert to AM/PM
+        return hhmmToAmPm(hhmm);
+      }
+    }
+
 
     // State
     const DEFAULT_PALETTE=['#243041','#2f2a41','#41322a','#2a4132','#2a3541','#5aa0ff','#ff8a5a','#5affc1','#d1c9ff','#ffd166'];
@@ -458,7 +1018,7 @@ function _getDays() {
     dayNumber: 1,
     date: s.meta?.date || '',
     dow: s.meta?.dow || '',
-    scheduleStart: s.start || '08:00',
+    scheduleStart: s.start || '8:00',
     rows: s.rows || [],
     palette: s.palette || DEFAULT_PALETTE.slice(),
     cols: s.cols || DEFAULT_CUSTOM_COLS.slice()
@@ -514,7 +1074,7 @@ function addNewDay(duplicateSchedule = false) {
     dayNumber: days.length + 1,
     date: newDate,
     dow: newDow,
-    scheduleStart: lastDay.scheduleStart || '08:00',
+    scheduleStart: lastDay.scheduleStart || '8:00',
     rows: duplicateSchedule ? JSON.parse(JSON.stringify(lastDay.rows || [])) : 
           [{id:uid(), type:'EVENT', title:'New Event', duration:30, custom:{}}],
     palette: lastDay.palette || DEFAULT_PALETTE.slice(),
@@ -591,7 +1151,20 @@ function loadDay(dayId) {
   if (metaDow) metaDow.value = dowToUse;
   if (metaX) metaX.value = day.dayNumber;
   if (metaY) metaY.value = days.length;
-  if (scheduleStart) scheduleStart.value = day.scheduleStart || '08:00';
+  if (scheduleStart) {
+    // Format based on time format preference
+    const timeValue = day.scheduleStart || '8:00';
+    const minutes = toMinutes(timeValue);
+    const hhmm = minutesToHHMM(minutes);
+    const format = getTimeFormat();
+    
+    if (format === '12h') {
+      scheduleStart.value = hhmmToAmPm(hhmm);
+    } else {
+      const [h, m] = hhmm.split(':').map(Number);
+      scheduleStart.value = `${h}:${String(m).padStart(2, '0')}`;
+    }
+  }
   
   // Migration: Fix old dark sub-schedule colors
   (day.rows || []).forEach(r => {
@@ -606,8 +1179,12 @@ function loadDay(dayId) {
   (day.rows || []).forEach(r => {
     const head = makeRow(r);
     tbody.appendChild(head);
+    
     if (r.type === 'SUB') {
-      (r.children || []).forEach(ch => tbody.appendChild(makeSubChildRow(head, ch)));
+      (r.children || []).forEach(ch => {
+        const childRow = makeSubChildRow(head, ch);
+        tbody.appendChild(childRow);
+      });
     }
   });
   
@@ -631,6 +1208,14 @@ function loadDay(dayId) {
   // Apply column alignments to all cells
   applyColumnAlignments();
   
+  // Reapply row formatting after all column operations
+  if (window.reapplyAllRowFormatting) {
+    setTimeout(() => {
+      console.log('[loadDay] Calling reapplyAllRowFormatting');
+      window.reapplyAllRowFormatting();
+    }, 100);
+  }
+  
   // Trigger header designer to update with new day's metadata
   // Use setTimeout to ensure DOM has updated with new values
   setTimeout(() => {
@@ -639,6 +1224,10 @@ function loadDay(dayId) {
       window.updateHeaderMetadata();
     }
   }, 10);
+  
+  // Apply row heights and add resize grips
+  applyRowHeights();
+  addRowResizeGrips();
 }
 
 function saveDayData() {
@@ -668,15 +1257,37 @@ function saveDayData() {
       subFg: tr.dataset.subFg || '',
       rowBg: tr.dataset.rowBg || '',
       rowFg: tr.dataset.rowFg || '',
-      // Save formatting properties
-      fontFamily: tr.dataset.fontFamily || '',
-      fontSize: tr.dataset.fontSize || '',
-      bold: tr.dataset.bold === 'true',
-      italic: tr.dataset.italic === 'true',
-      underline: tr.dataset.underline === 'true',
-      align: tr.dataset.align || '',
       custom: getRowCustomFromDOM(tr)
     };
+    
+    // Save cell-based formatting
+    const cellFormatting = {};
+    tr.querySelectorAll('td[data-key]').forEach(td => {
+      const key = td.dataset.key;
+      if (key === 'drag' || key === 'actions') return; // Skip control columns
+      
+      // Only save if cell has formatting
+      if (td.dataset.fontFamily || td.dataset.fontSize || td.dataset.bold || 
+          td.dataset.italic || td.dataset.underline || td.dataset.align || td.dataset.valign ||
+          td.dataset.cellFg || td.dataset.cellBg) {
+        
+        cellFormatting[key] = {
+          fontFamily: td.dataset.fontFamily || '',
+          fontSize: td.dataset.fontSize || '',
+          bold: td.dataset.bold === 'true',
+          italic: td.dataset.italic === 'true',
+          underline: td.dataset.underline === 'true',
+          align: td.dataset.align || '',
+          valign: td.dataset.valign || '',
+          fgColor: td.dataset.cellFg || '',
+          bgColor: td.dataset.cellBg || ''
+        };
+      }
+    });
+    
+    if (Object.keys(cellFormatting).length > 0) {
+      base.cellFormatting = cellFormatting;
+    }
     
     // Handle sub-schedule children
     if (base.type === 'SUB') {
@@ -690,15 +1301,36 @@ function saveDayData() {
           subType: subType,
           subChildColor: next.dataset.subChildColor || '',
           subChildFg: next.dataset.subChildFg || '',
-          // Save formatting properties
-          fontFamily: next.dataset.fontFamily || '',
-          fontSize: next.dataset.fontSize || '',
-          bold: next.dataset.bold === 'true',
-          italic: next.dataset.italic === 'true',
-          underline: next.dataset.underline === 'true',
-          align: next.dataset.align || '',
           custom: getRowCustomFromDOM(next)
         };
+        
+        // Save cell-based formatting for children
+        const childCellFormatting = {};
+        next.querySelectorAll('td[data-key]').forEach(td => {
+          const key = td.dataset.key;
+          if (key === 'drag' || key === 'actions') return;
+          
+          if (td.dataset.fontFamily || td.dataset.fontSize || td.dataset.bold || 
+              td.dataset.italic || td.dataset.underline || td.dataset.align || td.dataset.valign ||
+              td.dataset.cellFg || td.dataset.cellBg) {
+            
+            childCellFormatting[key] = {
+              fontFamily: td.dataset.fontFamily || '',
+              fontSize: td.dataset.fontSize || '',
+              bold: td.dataset.bold === 'true',
+              italic: td.dataset.italic === 'true',
+              underline: td.dataset.underline === 'true',
+              align: td.dataset.align || '',
+              valign: td.dataset.valign || '',
+              fgColor: td.dataset.cellFg || '',
+              bgColor: td.dataset.cellBg || ''
+            };
+          }
+        });
+        
+        if (Object.keys(childCellFormatting).length > 0) {
+          childData.cellFormatting = childCellFormatting;
+        }
         
         // Save either duration or offset depending on type
         if (subType === 'call') {
@@ -721,7 +1353,7 @@ function saveDayData() {
   updateDay(currentDayId, {
     date: metaDate?.value || '',
     dow: metaDow?.value || '',
-    scheduleStart: scheduleStart?.value || '08:00',
+    scheduleStart: scheduleStart?.value || '8:00',
     rows
   });
 }
@@ -1119,6 +1751,132 @@ function addHeaderResizeGrips(){
   }catch(e){}
 })();
 
+// === ROW HEIGHT MANAGEMENT ===
+function getRowH(){
+  try{
+    const s = readState();
+    return s.rowH || {};
+  }catch(e){ return {}; }
+}
+function setRowH(map){
+  const s = readState();
+  writeState({...s, rowH: map});
+  applyRowHeights();
+}
+function applyRowHeights(){
+  const heights = getRowH();
+  const tbody = document.getElementById('tbody');
+  if(!tbody) return;
+  
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    const id = tr.dataset.id;
+    if(heights[id]){
+      tr.style.height = heights[id] + 'px';
+      tr.style.minHeight = heights[id] + 'px';
+      tr.style.maxHeight = heights[id] + 'px';
+    } else {
+      tr.style.height = '';
+      tr.style.minHeight = '';
+      tr.style.maxHeight = '';
+    }
+  });
+}
+
+// Add row resize grips to all rows
+function addRowResizeGrips(){
+  const tbody = document.getElementById('tbody');
+  if(!tbody) return;
+  
+  // Remove existing grips
+  tbody.querySelectorAll('.row-resize-grip').forEach(g => g.remove());
+  
+  const rows = tbody.querySelectorAll('tr[data-id]');
+  
+  rows.forEach(tr => {
+    const id = tr.dataset.id;
+    if(!id) return;
+    
+    const grip = document.createElement('span');
+    grip.className = 'row-resize-grip';
+    
+    // Append to the first TD to keep it in flow
+    const firstTd = tr.querySelector('td');
+    if(!firstTd) return;
+    
+    // Make sure the TD is positioned relatively
+    if(getComputedStyle(firstTd).position === 'static'){
+      firstTd.style.position = 'relative';
+    }
+    
+    firstTd.appendChild(grip);
+    
+    let startY = 0, startH = 0, isResizing = false;
+    let tooltip = null;
+    
+    const onDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      isResizing = true;
+      startY = e.clientY;
+      startH = tr.offsetHeight;
+      
+      // Create tooltip
+      tooltip = document.createElement('div');
+      tooltip.className = 'resize-dimension-tooltip';
+      tooltip.textContent = startH + 'px';
+      document.body.appendChild(tooltip);
+      
+      const onMove = (ev) => {
+        if(!isResizing) return;
+        ev.preventDefault();
+        
+        const dy = ev.clientY - startY;
+        const minH = 24; // Minimum row height
+        const newH = Math.max(minH, startH + dy);
+        
+        // Update row height
+        tr.style.height = newH + 'px';
+        tr.style.minHeight = newH + 'px';
+        tr.style.maxHeight = newH + 'px';
+        
+        // Update tooltip
+        if(tooltip){
+          tooltip.textContent = Math.round(newH) + 'px';
+          tooltip.style.left = (ev.clientX + 10) + 'px';
+          tooltip.style.top = (ev.clientY + 10) + 'px';
+        }
+      };
+      
+      const onUp = () => {
+        if(!isResizing) return;
+        isResizing = false;
+        
+        // Save height
+        const currentH = tr.offsetHeight;
+        const heights = getRowH();
+        heights[id] = currentH;
+        setRowH(heights);
+        
+        // Remove tooltip
+        if(tooltip){
+          tooltip.remove();
+          tooltip = null;
+        }
+        
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        
+        persist();
+      };
+      
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+    
+    grip.addEventListener('mousedown', onDown);
+  });
+}
+
 
 
     function getPalette(){const s=readState(); return Array.isArray(s.palette)&&s.palette.length?s.palette:DEFAULT_PALETTE.slice();}
@@ -1434,13 +2192,6 @@ function addHeaderResizeGrips(){
               </select>`
             }
           </td>
-          <td>
-            <select class="colAlign" data-key="${c.key}">
-              <option value="left"${align==='left'?' selected':''}>←</option>
-              <option value="center"${align==='center'?' selected':''}>↔</option>
-              <option value="right"${align==='right'?' selected':''}>→</option>
-            </select>
-          </td>
           <td><input type="checkbox" class="colShow" data-key="${c.key}"${isVisible?' checked':''} /></td>
           <td><input type="checkbox" class="colPrint" data-key="${c.key}"${isPrintable?' checked':''} /></td>
           <td>
@@ -1466,7 +2217,6 @@ function addHeaderResizeGrips(){
         // Event listeners
         const label = row.querySelector('.colLabel');
         const typeSel = row.querySelector('.colType');
-        const alignSel = row.querySelector('.colAlign');
         const showChk = row.querySelector('.colShow');
         const printChk = row.querySelector('.colPrint');
         const moveUp = row.querySelector('.colMoveUp');
@@ -1549,12 +2299,6 @@ function addHeaderResizeGrips(){
             persist && persist();
             renderColManager(); // Rebuild to show/hide separator controls
           }
-        });
-        
-        // Alignment
-        alignSel && alignSel.addEventListener('change', () => { 
-          setColAlignment(c.key, alignSel.value);
-          applyColumnAlignments();
         });
         
         // Visibility
@@ -1740,7 +2484,7 @@ function addHeaderResizeGrips(){
         
         const cells = document.querySelectorAll(`td[data-key="${col.key}"]`);
         cells.forEach(cell => {
-          cell.style.setProperty('text-align', align, 'important');
+          cell.style.setProperty('text-align', align);
         });
       });
     }
@@ -1784,15 +2528,15 @@ function addHeaderResizeGrips(){
           if(format && format.align) {
             console.log('[applyColumnFormats] Applying alignment', format.align, 'to cell');
             
-            // Apply alignment to cell using CSS custom properties
+            // Apply alignment to cell (no !important - last applied wins)
             cell.style.setProperty('--col-align', format.align);
-            cell.style.setProperty('text-align', format.align, 'important');
+            cell.style.setProperty('text-align', format.align);
             
             // Apply alignment to all inputs/textareas/selects in cell
             const inputs = cell.querySelectorAll('input:not([type="color"]), textarea, select');
             console.log('[applyColumnFormats] Found', inputs.length, 'inputs in cell');
             inputs.forEach((input) => {
-              input.style.setProperty('text-align', format.align, 'important');
+              input.style.setProperty('text-align', format.align);
             });
           }
         });
@@ -1809,9 +2553,8 @@ function addHeaderResizeGrips(){
         if(formatType === 'column'){
           const formats = getColFormats();
           return formats[getKey()] || {};
-        } else {
-          const isSubchild = targetElement.classList.contains('subchild');
-          const isSub = targetElement.dataset.type === 'SUB';
+        } else if(formatType === 'cell'){
+          // For cells (TD elements), read from TD dataset
           return {
             fontFamily: targetElement.dataset.fontFamily || '',
             fontSize: targetElement.dataset.fontSize || '',
@@ -1819,9 +2562,27 @@ function addHeaderResizeGrips(){
             italic: targetElement.dataset.italic === 'true',
             underline: targetElement.dataset.underline === 'true',
             align: targetElement.dataset.align || '',
-            fgColor: isSubchild ? (targetElement.dataset.subChildFg || '') : isSub ? (targetElement.dataset.subFg || '') : (targetElement.dataset.rowFg || ''),
-            bgColor: isSubchild ? (targetElement.dataset.subChildColor || '') : isSub ? (targetElement.dataset.subColor || '') : (targetElement.dataset.rowBg || '')
+            valign: targetElement.dataset.valign || '',
+            fgColor: targetElement.dataset.cellFg || '',
+            bgColor: targetElement.dataset.cellBg || ''
           };
+        } else {
+          // For rows - read from first selected cell in SelectionManager
+          const firstCell = Array.from(SelectionManager.selectedCells)[0];
+          if (firstCell) {
+            return {
+              fontFamily: firstCell.dataset.fontFamily || '',
+              fontSize: firstCell.dataset.fontSize || '',
+              bold: firstCell.dataset.bold === 'true',
+              italic: firstCell.dataset.italic === 'true',
+              underline: firstCell.dataset.underline === 'true',
+              align: firstCell.dataset.align || '',
+              valign: firstCell.dataset.valign || '',
+              fgColor: firstCell.dataset.cellFg || '',
+              bgColor: firstCell.dataset.cellBg || ''
+            };
+          }
+          return {};
         }
       };
       
@@ -1829,10 +2590,17 @@ function addHeaderResizeGrips(){
       const pop = document.createElement('div');
       pop.className = 'format-popover popover compact-format is-open';
       
-      // Check if bulk formatting (multiple selected rows)
-      const isBulkFormat = selectedRows.size > 1 && selectedRows.has(targetElement);
-      const bulkCount = isBulkFormat ? selectedRows.size : 1;
-      const bulkIndicator = isBulkFormat ? ` <span style="color:var(--primary);font-size:11px;">(${bulkCount} rows)</span>` : '';
+      // Check if bulk formatting (multiple selected cells)
+      const selectedCount = SelectionManager.selectedCells.size;
+      const isBulkFormat = selectedCount > 1;
+      // Count unique rows for display
+      const uniqueRows = new Set();
+      SelectionManager.selectedCells.forEach(cell => {
+        const row = cell.closest('tr');
+        if (row) uniqueRows.add(row);
+      });
+      const bulkCount = uniqueRows.size;
+      const bulkIndicator = isBulkFormat && bulkCount > 1 ? ` <span style="color:var(--primary);font-size:11px;">(${bulkCount} rows)</span>` : '';
       
       // Build different HTML based on formatType
       // For columns: ONLY show alignment (no text formatting, no colors)
@@ -1859,43 +2627,72 @@ function addHeaderResizeGrips(){
         </div>
         <div class="compact-format-grid">
           <div class="format-row">
-            <select class="fmt-font" title="Font" style="font-size:11px;padding:4px;">
+            <select class="fmt-font" title="Font" style="font-size:11px;padding:4px;flex:1;">
               <option value="">Font</option>
               <option value="Arial, sans-serif">Arial</option>
-              <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+              <option value="'Avenir', 'Century Gothic', sans-serif">Avenir</option>
+              <option value="'Brush Script MT', cursive">Brush</option>
+              <option value="'Century Gothic', 'AppleGothic', sans-serif">Century</option>
+              <option value="'Comic Sans MS', cursive">Comic Sans</option>
+              <option value="'Consolas', 'Monaco', monospace">Consolas</option>
+              <option value="'Courier New', monospace">Courier</option>
+              <option value="'Franklin Gothic Medium', sans-serif">Franklin</option>
+              <option value="'Futura', 'Trebuchet MS', sans-serif">Futura</option>
+              <option value="Garamond, serif">Garamond</option>
               <option value="Georgia, serif">Georgia</option>
-              <option value="'Courier New', Courier, monospace">Courier</option>
+              <option value="'Gill Sans', 'Gill Sans MT', sans-serif">Gill Sans</option>
+              <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+              <option value="Impact, sans-serif">Impact</option>
+              <option value="'Times New Roman', serif">Times</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+              <option value="Verdana, sans-serif">Verdana</option>
             </select>
-            <select class="fmt-size" title="Size" style="font-size:11px;padding:4px;">
+            <select class="fmt-size" title="Size" style="font-size:11px;padding:4px;width:60px;">
               <option value="">Size</option>
+              <option value="6px">6</option>
+              <option value="7px">7</option>
+              <option value="8px">8</option>
+              <option value="9px">9</option>
               <option value="10px">10</option>
+              <option value="11px">11</option>
               <option value="12px">12</option>
+              <option value="13px">13</option>
               <option value="14px">14</option>
+              <option value="15px">15</option>
               <option value="16px">16</option>
+              <option value="17px">17</option>
               <option value="18px">18</option>
+              <option value="19px">19</option>
               <option value="20px">20</option>
+              <option value="21px">21</option>
+              <option value="22px">22</option>
+              <option value="24px">24</option>
+              <option value="28px">28</option>
+              <option value="32px">32</option>
             </select>
           </div>
-          <div class="format-row">
-            <button class="fmt-btn fmt-bold ${current.bold ? 'active' : ''}" title="Bold" style="font-weight:bold;">B</button>
-            <button class="fmt-btn fmt-italic ${current.italic ? 'active' : ''}" title="Italic" style="font-style:italic;">I</button>
-            <button class="fmt-btn fmt-underline ${current.underline ? 'active' : ''}" title="Underline" style="text-decoration:underline;">U</button>
-            <select class="fmt-align" title="Align" style="font-size:11px;padding:4px;">
-              <option value="">Align</option>
-              <option value="left">←</option>
-              <option value="center">↔</option>
-              <option value="right">→</option>
-            </select>
-          </div>
-          <div class="format-row">
-            <label class="color-label" style="display:flex;align-items:center;gap:4px;font-size:11px;">
-              <span>Text</span>
-              <input type="color" class="fmt-fg" value="${current.fgColor || '#000000'}" style="width:32px;height:24px;">
-            </label>
-            <label class="color-label" style="display:flex;align-items:center;gap:4px;font-size:11px;">
-              <span>BG</span>
-              <input type="color" class="fmt-bg" value="${current.bgColor || '#ffffff'}" style="width:32px;height:24px;">
-            </label>
+          <div class="format-row" style="display:flex;gap:8px;align-items:flex-start;">
+            <div style="display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);gap:2px;">
+              <button class="fmt-btn fmt-bold ${current.bold ? 'active' : ''}" title="Bold" style="font-weight:bold;width:32px;height:32px;padding:0;">B</button>
+              <button class="fmt-btn fmt-italic ${current.italic ? 'active' : ''}" title="Italic" style="font-style:italic;width:32px;height:32px;padding:0;">I</button>
+              <button class="fmt-btn fmt-underline ${current.underline ? 'active' : ''}" title="Underline" style="text-decoration:underline;width:32px;height:32px;padding:0;">U</button>
+              <button class="fmt-btn fmt-align-left ${current.align === 'left' ? 'active' : ''}" title="Left" style="width:32px;height:32px;padding:0;">⬅</button>
+              <button class="fmt-btn fmt-align-center ${current.align === 'center' ? 'active' : ''}" title="Center" style="width:32px;height:32px;padding:0;">↔</button>
+              <button class="fmt-btn fmt-align-right ${current.align === 'right' ? 'active' : ''}" title="Right" style="width:32px;height:32px;padding:0;">➡</button>
+              <button class="fmt-btn fmt-valign-top ${current.valign === 'top' ? 'active' : ''}" title="Top" style="width:32px;height:32px;padding:0;">⬆</button>
+              <button class="fmt-btn fmt-valign-middle ${current.valign === 'middle' ? 'active' : ''}" title="Middle" style="width:32px;height:32px;padding:0;">↕</button>
+              <button class="fmt-btn fmt-valign-bottom ${current.valign === 'bottom' ? 'active' : ''}" title="Bottom" style="width:32px;height:32px;padding:0;">⬇</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+              <label class="color-label" style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                <span style="min-width:32px;">Text</span>
+                <input type="color" class="fmt-fg" value="${(current.fgColor && current.fgColor !== 'transparent') ? current.fgColor : '#000000'}" style="flex:1;height:24px;">
+              </label>
+              <label class="color-label" style="display:flex;align-items:center;gap:6px;font-size:11px;">
+                <span style="min-width:32px;">BG</span>
+                <input type="color" class="fmt-bg" value="${(current.bgColor && current.bgColor !== 'transparent') ? current.bgColor : '#ffffff'}" style="flex:1;height:24px;">
+              </label>
+            </div>
           </div>
           <div class="format-actions" style="display:none;">
             <button class="fmt-apply" style="flex:1;">Apply</button>
@@ -1908,13 +2705,19 @@ function addHeaderResizeGrips(){
       
       triggerBtn.after(pop);
       
+      // Stop all clicks and mousedown inside popover from bubbling to drag cell (which would trigger row selection)
+      pop.addEventListener('click', (e) => e.stopPropagation());
+      pop.addEventListener('mousedown', (e) => e.stopPropagation());
+      
       // Position popover relative to button using fixed positioning
       const btnRect = triggerBtn.getBoundingClientRect();
-      const popupHeight = formatType === 'column' ? 120 : 280;
+      const popupHeight = formatType === 'column' ? 120 : 320; // Increased from 280 for valign row
       const viewportHeight = window.innerHeight;
       
       pop.style.position = 'fixed';
-      pop.style.left = (btnRect.left) + 'px';
+      // Position to the left of the button instead of right
+      const popRect = pop.getBoundingClientRect();
+      pop.style.left = (btnRect.left - popRect.width - 8) + 'px';
       
       if (btnRect.bottom + popupHeight + 4 > viewportHeight) {
         pop.style.top = Math.max(10, btnRect.top - popupHeight - 4) + 'px';
@@ -1963,10 +2766,8 @@ function addHeaderResizeGrips(){
       // === ROW FORMATTING (FULL OPTIONS) ===
       const fontSel = pop.querySelector('.fmt-font');
       const sizeSel = pop.querySelector('.fmt-size');
-      const alignSel = pop.querySelector('.fmt-align');
       if(fontSel) fontSel.value = current.fontFamily || '';
       if(sizeSel) sizeSel.value = current.fontSize || '';
-      if(alignSel) alignSel.value = current.align || '';
       
       const boldBtn = pop.querySelector('.fmt-bold');
       const italicBtn = pop.querySelector('.fmt-italic');
@@ -1976,38 +2777,30 @@ function addHeaderResizeGrips(){
       const applyFormatNow = () => {
         const fgEl = pop.querySelector('.fmt-fg');
         const bgEl = pop.querySelector('.fmt-bg');
+        
+        // Get align from active button
+        const alignLeftBtn = pop.querySelector('.fmt-align-left');
+        const alignCenterBtn = pop.querySelector('.fmt-align-center');
+        const alignRightBtn = pop.querySelector('.fmt-align-right');
+        let align = 'left';
+        if (alignCenterBtn?.classList.contains('active')) align = 'center';
+        if (alignRightBtn?.classList.contains('active')) align = 'right';
+        
         const format = {
           fontFamily: fontSel?.value || '',
           fontSize: sizeSel?.value || '',
           bold: boldBtn?.classList.contains('active') || false,
           italic: italicBtn?.classList.contains('active') || false,
           underline: underlineBtn?.classList.contains('active') || false,
-          align: alignSel?.value || '',
-          fgColor: fgEl ? fgEl.value : '#000000',
-          bgColor: bgEl ? bgEl.value : '#ffffff'
+          align: align,
+          fgColor: fgEl ? fgEl.value : '',
+          bgColor: bgEl ? bgEl.value : ''
         };
         
-        console.log('[Format changed] formatType:', formatType, 'format:', format);
-        
-        // Apply to all selected rows if multi-selection is active
-        const rowsToFormat = selectedRows.size > 1 && selectedRows.has(targetElement) 
-          ? Array.from(selectedRows) 
-          : [targetElement];
-        
-        console.log(`[Bulk format] Applying to ${rowsToFormat.length} row(s)`);
-        
-        rowsToFormat.forEach(row => {
-          applyRowBg(row, format.bgColor, false, false);
-          row.dataset.rowFg = format.fgColor;
-          row.dataset.fontFamily = format.fontFamily;
-          row.dataset.fontSize = format.fontSize;
-          row.dataset.bold = format.bold ? 'true' : '';
-          row.dataset.italic = format.italic ? 'true' : '';
-          row.dataset.underline = format.underline ? 'true' : '';
-          row.dataset.align = format.align;
-          
-          // Apply formatting to row
-          applyFormatting(row, format, formatType);
+        // Apply to all selected cells
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, format);
         });
         
         persist();
@@ -2016,25 +2809,165 @@ function addHeaderResizeGrips(){
       // Attach change listeners to apply formatting immediately
       if (boldBtn) boldBtn.addEventListener('click', () => {
         boldBtn.classList.toggle('active');
-        applyFormatNow();
-      });
-      if (italicBtn) italicBtn.addEventListener('click', () => {
-        italicBtn.classList.toggle('active');
-        applyFormatNow();
-      });
-      if (underlineBtn) underlineBtn.addEventListener('click', () => {
-        underlineBtn.classList.toggle('active');
-        applyFormatNow();
+        const isBold = boldBtn.classList.contains('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { bold: isBold });
+        });
+        persist();
       });
       
-      if (fontSel) fontSel.addEventListener('change', applyFormatNow);
-      if (sizeSel) sizeSel.addEventListener('change', applyFormatNow);
-      if (alignSel) alignSel.addEventListener('change', applyFormatNow);
+      if (italicBtn) italicBtn.addEventListener('click', () => {
+        italicBtn.classList.toggle('active');
+        const isItalic = italicBtn.classList.contains('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { italic: isItalic });
+        });
+        persist();
+      });
+      
+      if (underlineBtn) underlineBtn.addEventListener('click', () => {
+        underlineBtn.classList.toggle('active');
+        const isUnderline = underlineBtn.classList.contains('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { underline: isUnderline });
+        });
+        persist();
+      });
+      
+      // Vertical alignment buttons
+      const valignTopBtn = pop.querySelector('.fmt-valign-top');
+      const valignMiddleBtn = pop.querySelector('.fmt-valign-middle');
+      const valignBottomBtn = pop.querySelector('.fmt-valign-bottom');
+      
+      if (valignTopBtn) valignTopBtn.addEventListener('click', () => {
+        // Clear all valign active states
+        valignTopBtn.classList.add('active');
+        if (valignMiddleBtn) valignMiddleBtn.classList.remove('active');
+        if (valignBottomBtn) valignBottomBtn.classList.remove('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { valign: 'top' });
+        });
+        persist();
+      });
+      
+      if (valignMiddleBtn) valignMiddleBtn.addEventListener('click', () => {
+        // Clear all valign active states
+        if (valignTopBtn) valignTopBtn.classList.remove('active');
+        valignMiddleBtn.classList.add('active');
+        if (valignBottomBtn) valignBottomBtn.classList.remove('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { valign: 'middle' });
+        });
+        persist();
+      });
+      
+      if (valignBottomBtn) valignBottomBtn.addEventListener('click', () => {
+        // Clear all valign active states
+        if (valignTopBtn) valignTopBtn.classList.remove('active');
+        if (valignMiddleBtn) valignMiddleBtn.classList.remove('active');
+        valignBottomBtn.classList.add('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { valign: 'bottom' });
+        });
+        persist();
+      });
+      
+      if (fontSel) fontSel.addEventListener('change', () => {
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { fontFamily: fontSel.value });
+        });
+        persist();
+      });
+      
+      if (sizeSel) sizeSel.addEventListener('change', () => {
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { fontSize: sizeSel.value });
+        });
+        persist();
+      });
+      
+      // Horizontal alignment buttons
+      const alignLeftBtn = pop.querySelector('.fmt-align-left');
+      const alignCenterBtn = pop.querySelector('.fmt-align-center');
+      const alignRightBtn = pop.querySelector('.fmt-align-right');
+      
+      if (alignLeftBtn) alignLeftBtn.addEventListener('click', () => {
+        // Clear all align active states
+        alignLeftBtn.classList.add('active');
+        if (alignCenterBtn) alignCenterBtn.classList.remove('active');
+        if (alignRightBtn) alignRightBtn.classList.remove('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { align: 'left' });
+        });
+        persist();
+      });
+      
+      if (alignCenterBtn) alignCenterBtn.addEventListener('click', () => {
+        // Clear all align active states
+        if (alignLeftBtn) alignLeftBtn.classList.remove('active');
+        alignCenterBtn.classList.add('active');
+        if (alignRightBtn) alignRightBtn.classList.remove('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { align: 'center' });
+        });
+        persist();
+      });
+      
+      if (alignRightBtn) alignRightBtn.addEventListener('click', () => {
+        // Clear all align active states
+        if (alignLeftBtn) alignLeftBtn.classList.remove('active');
+        if (alignCenterBtn) alignCenterBtn.classList.remove('active');
+        alignRightBtn.classList.add('active');
+        
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          applyFormatting(cell, { align: 'right' });
+        });
+        persist();
+      });
       
       const fgInput = pop.querySelector('.fmt-fg');
       const bgInput = pop.querySelector('.fmt-bg');
-      if(fgInput) fgInput.addEventListener('input', applyFormatNow);
-      if(bgInput) bgInput.addEventListener('input', applyFormatNow);
+      
+      // Stop propagation on color inputs so clicks don't bubble to drag cell
+      if(fgInput) {
+        fgInput.addEventListener('click', (e) => e.stopPropagation());
+        fgInput.addEventListener('input', () => {
+          const selectedCells = SelectionManager.getSelectedCells();
+          selectedCells.forEach(cell => {
+            applyFormatting(cell, { fgColor: fgInput.value });
+          });
+          persist();
+        });
+      }
+      if(bgInput) {
+        bgInput.addEventListener('click', (e) => e.stopPropagation());
+        bgInput.addEventListener('input', () => {
+          const selectedCells = SelectionManager.getSelectedCells();
+          selectedCells.forEach(cell => {
+            applyFormatting(cell, { bgColor: bgInput.value });
+          });
+          persist();
+        });
+      }
       
       const applyBtn = pop.querySelector('.fmt-apply');
       if (applyBtn) applyBtn.addEventListener('click', () => {
@@ -2044,33 +2977,37 @@ function addHeaderResizeGrips(){
       
       const clearBtn = pop.querySelector('.fmt-clear');
       if (clearBtn) clearBtn.addEventListener('click', () => {
-        // Clear all selected rows if multi-selection is active
-        const rowsToClear = selectedRows.size > 1 && selectedRows.has(targetElement) 
-          ? Array.from(selectedRows) 
-          : [targetElement];
-        
-        console.log(`[Bulk clear] Clearing ${rowsToClear.length} row(s)`);
-        
-        rowsToClear.forEach(row => {
-          row.dataset.rowFg = '';
-          row.dataset.fontFamily = '';
-          row.dataset.fontSize = '';
-          row.dataset.bold = '';
-          row.dataset.italic = '';
-          row.dataset.underline = '';
-          row.dataset.align = '';
-          applyRowBg(row, '', false, false);
+        // Clear all selected cells
+        const selectedCells = SelectionManager.getSelectedCells();
+        selectedCells.forEach(cell => {
+          // Clear dataset
+          cell.dataset.fontFamily = '';
+          cell.dataset.fontSize = '';
+          cell.dataset.bold = '';
+          cell.dataset.italic = '';
+          cell.dataset.underline = '';
+          cell.dataset.align = '';
+          cell.dataset.valign = '';
+          cell.dataset.cellFg = '';
+          cell.dataset.cellBg = '';
           
-          const inputs = row.querySelectorAll('input:not(.duration):not(.offset), textarea, select');
-          inputs.forEach(inp => {
-            inp.style.fontFamily = '';
-            inp.style.fontSize = '';
-            inp.style.fontWeight = '';
-            inp.style.fontStyle = '';
-            inp.style.textDecoration = '';
-            inp.style.textAlign = '';
-            inp.style.color = '';
-          });
+          // Clear TD styles
+          cell.style.removeProperty('background-color');
+          cell.style.removeProperty('color');
+          cell.style.removeProperty('vertical-align');
+          
+          // Clear input styles
+          const input = cell.querySelector('textarea, input, select');
+          if (input) {
+            input.style.removeProperty('font-family');
+            input.style.removeProperty('font-size');
+            input.style.removeProperty('font-weight');
+            input.style.removeProperty('font-style');
+            input.style.removeProperty('text-decoration');
+            input.style.removeProperty('text-align');
+            input.style.removeProperty('color');
+            input.style.removeProperty('background-color');
+          }
         });
         
         persist();
@@ -2103,6 +3040,7 @@ function addHeaderResizeGrips(){
             italic: rowElement.dataset.italic === 'true',
             underline: rowElement.dataset.underline === 'true',
             align: rowElement.dataset.align || 'left',
+            valign: rowElement.dataset.valign || 'top',
             fgColor: rowElement.dataset.cellFg || '',
             bgColor: rowElement.dataset.cellBg || ''
           };
@@ -2121,6 +3059,7 @@ function addHeaderResizeGrips(){
             italic: rowElement.dataset.italic === 'true',
             underline: rowElement.dataset.underline === 'true',
             align: rowElement.dataset.align || 'left',
+            valign: rowElement.dataset.valign || 'top',
             fgColor: isSubchild ? (rowElement.dataset.subChildFg || '') : 
                      isSub ? (rowElement.dataset.subFg || '') : 
                      (rowElement.dataset.rowFg || ''),
@@ -2131,40 +3070,38 @@ function addHeaderResizeGrips(){
         }
       };
       
-      // Check if this button already has a popover
-      let pop = triggerBtn.nextElementSibling;
-      if (pop && pop.classList.contains('format-popover')) {
-        // Just toggle it
-      } else {
-        // Create new formatting popover
-        const current = getCurrentFormatting();
-        
-        pop=document.createElement('div'); 
-        pop.className='format-popover popover';
-        pop.innerHTML=`
-          <div class="pop-head"><strong>Format Text</strong><button class="ghost pop-close">✕</button></div>
+      // ALWAYS remove all existing format popups first (nuclear option)
+      document.querySelectorAll('.format-popover').forEach(oldPop => oldPop.remove());
+      
+      // Create new formatting popover
+      const current = getCurrentFormatting();
+      
+      let pop = document.createElement('div'); 
+      pop.className='format-popover popover';
+      pop.innerHTML=`
+        <div class="pop-head"><strong>Format Text</strong><button class="ghost pop-close">✕</button></div>
           
           <div class="format-section">
             <label class="format-label">Font Family</label>
             <select class="format-font-family">
               <option value="">Default</option>
               <option value="Arial, sans-serif">Arial</option>
-              <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
-              <option value="'Century Gothic', 'AppleGothic', sans-serif">Century Gothic</option>
-              <option value="'Futura', 'Trebuchet MS', sans-serif">Futura</option>
               <option value="'Avenir', 'Century Gothic', sans-serif">Avenir</option>
-              <option value="'Franklin Gothic Medium', sans-serif">Franklin Gothic</option>
-              <option value="'Gill Sans', 'Gill Sans MT', sans-serif">Gill Sans</option>
-              <option value="'Times New Roman', Times, serif">Times New Roman</option>
-              <option value="Georgia, serif">Georgia</option>
-              <option value="Garamond, serif">Garamond</option>
-              <option value="'Courier New', Courier, monospace">Courier New</option>
-              <option value="'Consolas', 'Monaco', monospace">Consolas</option>
-              <option value="Verdana, sans-serif">Verdana</option>
-              <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-              <option value="Impact, sans-serif">Impact</option>
-              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
               <option value="'Brush Script MT', cursive">Brush Script</option>
+              <option value="'Century Gothic', 'AppleGothic', sans-serif">Century Gothic</option>
+              <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+              <option value="'Consolas', 'Monaco', monospace">Consolas</option>
+              <option value="'Courier New', Courier, monospace">Courier New</option>
+              <option value="'Franklin Gothic Medium', sans-serif">Franklin Gothic</option>
+              <option value="'Futura', 'Trebuchet MS', sans-serif">Futura</option>
+              <option value="Garamond, serif">Garamond</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="'Gill Sans', 'Gill Sans MT', sans-serif">Gill Sans</option>
+              <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+              <option value="Impact, sans-serif">Impact</option>
+              <option value="'Times New Roman', Times, serif">Times New Roman</option>
+              <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+              <option value="Verdana, sans-serif">Verdana</option>
             </select>
           </div>
           
@@ -2172,13 +3109,23 @@ function addHeaderResizeGrips(){
             <label class="format-label">Font Size</label>
             <select class="format-font-size">
               <option value="">Default</option>
+              <option value="6px">6px</option>
+              <option value="7px">7px</option>
+              <option value="8px">8px</option>
+              <option value="9px">9px</option>
               <option value="10px">10px</option>
               <option value="11px">11px</option>
               <option value="12px">12px</option>
+              <option value="13px">13px</option>
               <option value="14px">14px</option>
+              <option value="15px">15px</option>
               <option value="16px">16px</option>
+              <option value="17px">17px</option>
               <option value="18px">18px</option>
+              <option value="19px">19px</option>
               <option value="20px">20px</option>
+              <option value="21px">21px</option>
+              <option value="22px">22px</option>
               <option value="24px">24px</option>
               <option value="28px">28px</option>
               <option value="32px">32px</option>
@@ -2198,8 +3145,13 @@ function addHeaderResizeGrips(){
             <label class="format-label">Alignment</label>
             <div class="format-buttons">
               <button class="format-btn format-align-left" data-active="${current.align==='left'}" title="Left">⬅</button>
-              <button class="format-btn format-align-center" data-active="${current.align==='center'}" title="Center">⬌</button>
+              <button class="format-btn format-align-center" data-active="${current.align==='center'}" title="Center">↔</button>
               <button class="format-btn format-align-right" data-active="${current.align==='right'}" title="Right">➡</button>
+            </div>
+            <div class="format-buttons" style="margin-top: 4px;">
+              <button class="format-btn format-valign-top" data-active="${current.valign==='top'}" title="Top">⬆</button>
+              <button class="format-btn format-valign-middle" data-active="${current.valign==='middle'}" title="Middle">↕</button>
+              <button class="format-btn format-valign-bottom" data-active="${current.valign==='bottom'}" title="Bottom">⬇</button>
             </div>
           </div>
           
@@ -2274,6 +3226,16 @@ function addHeaderResizeGrips(){
           });
         });
         
+        // Vertical alignment buttons
+        pop.querySelectorAll('.format-valign-top, .format-valign-middle, .format-valign-bottom').forEach(btn => {
+          btn.addEventListener('click', (e)=> {
+            e.preventDefault();
+            e.stopPropagation();
+            pop.querySelectorAll('.format-valign-top, .format-valign-middle, .format-valign-bottom').forEach(b => b.dataset.active = 'false');
+            btn.dataset.active = 'true';
+          });
+        });
+        
         // Clear buttons
         pop.querySelector('.clear-fg').addEventListener('click', (e)=> {
           e.preventDefault();
@@ -2294,6 +3256,8 @@ function addHeaderResizeGrips(){
             underline: pop.querySelector('.format-underline').dataset.active === 'true',
             align: pop.querySelector('[data-active="true"][class*="format-align"]')?.classList.contains('format-align-center') ? 'center' : 
                    pop.querySelector('[data-active="true"][class*="format-align"]')?.classList.contains('format-align-right') ? 'right' : 'left',
+            valign: pop.querySelector('[data-active="true"][class*="format-valign"]')?.classList.contains('format-valign-middle') ? 'middle' :
+                    pop.querySelector('[data-active="true"][class*="format-valign"]')?.classList.contains('format-valign-bottom') ? 'bottom' : 'top',
             fgColor: pop.querySelector('.format-fg-color').value,
             bgColor: pop.querySelector('.format-bg-color').value
           };
@@ -2308,7 +3272,7 @@ function addHeaderResizeGrips(){
         pop.querySelector('.reset-format').addEventListener('click', ()=>{
           applyFormatting(rowElement, {
             fontFamily: '', fontSize: '', bold: false, italic: false, 
-            underline: false, align: 'left', fgColor: '', bgColor: ''
+            underline: false, align: 'left', valign: 'top', fgColor: '', bgColor: ''
           }, formatType);
           pop.classList.remove('is-open');
           persist();
@@ -2317,16 +3281,26 @@ function addHeaderResizeGrips(){
         // Close button
         pop.querySelector('.pop-close').addEventListener('click', ()=> pop.classList.remove('is-open'));
         
-        triggerBtn.after(pop);
-      }
+        document.body.appendChild(pop); // Append to body to escape table stacking context
       
       triggerBtn.setAttribute('data-popover-trigger','');
       const newBtn = triggerBtn.cloneNode(true);
       triggerBtn.parentNode.replaceChild(newBtn, triggerBtn);
       
+      // Store bidirectional references
+      newBtn._formatPopover = pop;
+      pop._activeButton = newBtn;
+      
       newBtn.addEventListener('click', (e)=> { 
         e.stopPropagation(); 
         closeAllPopovers(); 
+        
+        // Force popup to be the last element in body (ensures it paints last)
+        if (pop.parentNode === document.body) {
+          document.body.removeChild(pop);
+        }
+        document.body.appendChild(pop);
+        
         pop.classList.add('is-open'); 
         
         const r = newBtn.getBoundingClientRect(); 
@@ -2334,7 +3308,8 @@ function addHeaderResizeGrips(){
         const viewportHeight = window.innerHeight;
         
         pop.style.position = 'fixed';
-        pop.style.left = r.left + 'px';
+        pop.style.setProperty('z-index', '2147483647', 'important'); // Force maximum z-index
+        pop.style.left = (r.left + 100) + 'px'; // Shift right to avoid drag handles
         
         // Check if popup would go off bottom of screen
         if (r.bottom + popupHeight + 4 > viewportHeight) {
@@ -2352,254 +3327,290 @@ function addHeaderResizeGrips(){
       }
     }
     
-    function applyFormatting(element, formatting, formatType='row') {
+    function applyFormatting(td, formatting) {
       try {
-      // Store formatting in dataset
-      if (formatting.fontFamily) element.dataset.fontFamily = formatting.fontFamily;
-      else delete element.dataset.fontFamily;
-      
-      if (formatting.fontSize) element.dataset.fontSize = formatting.fontSize;
-      else delete element.dataset.fontSize;
-      
-      element.dataset.bold = formatting.bold;
-      element.dataset.italic = formatting.italic;
-      element.dataset.underline = formatting.underline;
-      element.dataset.align = formatting.align;
-      
-      if (formatting.fgColor) element.dataset.rowFg = formatting.fgColor;
-      else delete element.dataset.rowFg;
-      
-      if (formatting.bgColor) element.dataset.rowBg = formatting.bgColor;
-      else delete element.dataset.rowBg;
-      
-      // Apply visual styles
-      if (formatType === 'row') {
-        // Apply to all TD elements in the row for proper inheritance (except control columns)
-        element.querySelectorAll('td').forEach(td => {
-          const key = td.dataset.key;
-          const isControlColumn = key === 'drag' || key === 'idx' || key === 'actions';
+        // Cell-based formatting only
+        // element is a TD cell
+        
+        if (!td || !td.dataset) {
+          console.error('[applyFormatting] Invalid cell element:', td);
+          return;
+        }
+        
+        // Skip control columns
+        const key = td.dataset.key;
+        if (key === 'drag' || key === 'actions') {
+          return;
+        }
+        
+        // Store formatting in TD dataset
+        if (formatting.fontFamily !== undefined) td.dataset.fontFamily = formatting.fontFamily || '';
+        if (formatting.fontSize !== undefined) td.dataset.fontSize = formatting.fontSize || '';
+        if (formatting.bold !== undefined) td.dataset.bold = formatting.bold ? 'true' : '';
+        if (formatting.italic !== undefined) td.dataset.italic = formatting.italic ? 'true' : '';
+        if (formatting.underline !== undefined) td.dataset.underline = formatting.underline ? 'true' : '';
+        if (formatting.align !== undefined) td.dataset.align = formatting.align || '';
+        if (formatting.valign !== undefined) td.dataset.valign = formatting.valign || '';
+        if (formatting.fgColor !== undefined) td.dataset.cellFg = formatting.fgColor || '';
+        if (formatting.bgColor !== undefined) td.dataset.cellBg = formatting.bgColor || '';
+        
+        // Apply vertical alignment to TD cell itself
+        if (formatting.valign !== undefined) {
+          if (formatting.valign) {
+            td.style.setProperty('vertical-align', formatting.valign, 'important');
+          } else {
+            td.style.removeProperty('vertical-align');
+          }
+        }
+        
+        // Apply background color to TD cell itself for full coverage
+        if (formatting.bgColor !== undefined) {
+          if (formatting.bgColor) {
+            td.style.setProperty('background-color', formatting.bgColor, 'important');
+          } else {
+            td.style.removeProperty('background-color');
+          }
+        }
+        
+        // Apply text color to TD cell
+        if (formatting.fgColor !== undefined) {
+          if (formatting.fgColor) {
+            td.style.setProperty('color', formatting.fgColor, 'important');
+          } else {
+            td.style.removeProperty('color');
+          }
+        }
+        
+        // Find the input/textarea/select in this cell
+        const input = td.querySelector('textarea, input, select');
+        
+        if (input) {
+          // Cell has input - apply font styles to input
+          if (formatting.fontFamily !== undefined) {
+            if (formatting.fontFamily) {
+              input.style.setProperty('font-family', formatting.fontFamily, 'important');
+            } else {
+              input.style.removeProperty('font-family');
+            }
+          }
           
-          if (!isControlColumn) {
+          if (formatting.fontSize !== undefined) {
+            if (formatting.fontSize) {
+              input.style.setProperty('font-size', formatting.fontSize, 'important');
+            } else {
+              input.style.removeProperty('font-size');
+            }
+          }
+          
+          if (formatting.bold !== undefined) {
+            input.style.setProperty('font-weight', formatting.bold ? 'bold' : 'normal', 'important');
+          }
+          
+          if (formatting.italic !== undefined) {
+            input.style.setProperty('font-style', formatting.italic ? 'italic' : 'normal', 'important');
+          }
+          
+          if (formatting.underline !== undefined) {
+            input.style.setProperty('text-decoration', formatting.underline ? 'underline' : 'none', 'important');
+          }
+          
+          if (formatting.align !== undefined) {
+            input.style.setProperty('text-align', formatting.align || 'left', 'important');
+          }
+          
+          if (formatting.fgColor !== undefined) {
+            if (formatting.fgColor) {
+              input.style.setProperty('color', formatting.fgColor, 'important');
+            } else {
+              input.style.removeProperty('color');
+            }
+          }
+          
+          if (formatting.bgColor !== undefined) {
+            if (formatting.bgColor) {
+              input.style.setProperty('background-color', formatting.bgColor, 'important');
+            } else {
+              input.style.removeProperty('background-color');
+            }
+          }
+        } else {
+          // No input - apply all styles directly to TD (for start/end/idx columns)
+          if (formatting.fontFamily !== undefined) {
             if (formatting.fontFamily) {
               td.style.setProperty('font-family', formatting.fontFamily, 'important');
             } else {
               td.style.removeProperty('font-family');
             }
-            
+          }
+          
+          if (formatting.fontSize !== undefined) {
             if (formatting.fontSize) {
               td.style.setProperty('font-size', formatting.fontSize, 'important');
             } else {
               td.style.removeProperty('font-size');
             }
-            
+          }
+          
+          if (formatting.bold !== undefined) {
             td.style.setProperty('font-weight', formatting.bold ? 'bold' : 'normal', 'important');
+          }
+          
+          if (formatting.italic !== undefined) {
             td.style.setProperty('font-style', formatting.italic ? 'italic' : 'normal', 'important');
+          }
+          
+          if (formatting.underline !== undefined) {
             td.style.setProperty('text-decoration', formatting.underline ? 'underline' : 'none', 'important');
           }
           
-          // Apply alignment to text cells (not drag or actions)
-          if (!td.classList.contains('drag') && !td.classList.contains('actions')) {
-            td.style.textAlign = formatting.align;
-          }
-        });
-        
-        // Also apply to inputs and text areas in the row
-        element.querySelectorAll('input[type="text"], input.title, input.subTitle, textarea').forEach(input => {
-          if (formatting.fontFamily) {
-            input.style.setProperty('font-family', formatting.fontFamily, 'important');
-          } else {
-            input.style.removeProperty('font-family');
+          if (formatting.align !== undefined) {
+            td.style.setProperty('text-align', formatting.align || 'left', 'important');
           }
           
-          if (formatting.fontSize) {
-            input.style.setProperty('font-size', formatting.fontSize, 'important');
-          } else {
-            input.style.removeProperty('font-size');
-          }
-          
-          input.style.setProperty('font-weight', formatting.bold ? 'bold' : 'normal', 'important');
-          input.style.setProperty('font-style', formatting.italic ? 'italic' : 'normal', 'important');
-          input.style.textDecoration = formatting.underline ? 'underline' : '';
-        });
-        
-        if (formatting.fgColor) {
-          // Handle different row types
-          if (element.classList.contains('subchild')) {
-            element.dataset.subChildFg = formatting.fgColor;
-            element.style.setProperty('--subchild-fg', formatting.fgColor);
-          } else if (element.dataset.type === 'SUB') {
-            element.dataset.subFg = formatting.fgColor;
-            element.style.setProperty('--sub-fg', formatting.fgColor);
-          } else {
-            element.dataset.rowFg = formatting.fgColor;
-            element.style.setProperty('--row-fg', formatting.fgColor);
-          }
-          // Apply color to all cells EXCEPT control columns (drag, idx, actions)
-          console.log('🎨 Applying fg color to cells:', formatting.fgColor);
-          element.querySelectorAll('td').forEach(td => {
-            const key = td.dataset.key;
-            if (key !== 'drag' && key !== 'idx' && key !== 'actions') {
+          // Apply colors to TD (already done above, but ensure they're applied)
+          if (formatting.fgColor !== undefined) {
+            if (formatting.fgColor) {
               td.style.setProperty('color', formatting.fgColor, 'important');
-            }
-          });
-          // Also apply to inputs
-          element.querySelectorAll('input, textarea').forEach(input => {
-            input.style.setProperty('color', formatting.fgColor, 'important');
-          });
-        } else {
-          if (element.classList.contains('subchild')) {
-            delete element.dataset.subChildFg;
-            element.style.removeProperty('--subchild-fg');
-          } else if (element.dataset.type === 'SUB') {
-            delete element.dataset.subFg;
-            element.style.removeProperty('--sub-fg');
-          } else {
-            delete element.dataset.rowFg;
-            element.style.removeProperty('--row-fg');
-          }
-          element.querySelectorAll('td').forEach(td => {
-            const key = td.dataset.key;
-            if (key !== 'drag' && key !== 'idx' && key !== 'actions') {
+            } else {
               td.style.removeProperty('color');
             }
-          });
-          // Also clear from inputs
-          element.querySelectorAll('input, textarea').forEach(input => {
-            input.style.removeProperty('color');
-          });
-        }
-        
-        if (formatting.bgColor) {
-          // Handle different row types
-          if (element.classList.contains('subchild')) {
-            element.dataset.subChildColor = formatting.bgColor;
-            element.style.setProperty('--subchild-bg', formatting.bgColor);
-          } else if (element.dataset.type === 'SUB') {
-            element.dataset.subColor = formatting.bgColor;
-            element.style.setProperty('--sub-bg', formatting.bgColor);
-          } else {
-            element.dataset.rowBg = formatting.bgColor;
-            element.style.setProperty('--row-bg', formatting.bgColor);
           }
-        } else {
-          if (element.classList.contains('subchild')) {
-            delete element.dataset.subChildColor;
-            element.style.removeProperty('--subchild-bg');
-          } else if (element.dataset.type === 'SUB') {
-            delete element.dataset.subColor;
-            element.style.removeProperty('--sub-bg');
-          } else {
-            delete element.dataset.rowBg;
-            element.style.removeProperty('--row-bg');
+          
+          if (formatting.bgColor !== undefined) {
+            if (formatting.bgColor) {
+              td.style.setProperty('background-color', formatting.bgColor, 'important');
+            } else {
+              td.style.removeProperty('background-color');
+            }
           }
         }
         
-        // Update row number color to match
-        const rowNumCell = element.querySelector('td:first-child');
-        if (rowNumCell && formatting.fgColor) {
-          rowNumCell.style.color = formatting.fgColor;
-        } else if (rowNumCell) {
-          rowNumCell.style.color = '';
+        // If this is a tags cell, re-render the pills with new formatting
+        const tagsValue = td.querySelector('.tags-value');
+        if (tagsValue && tagsValue.value) {
+          const pills = td.querySelector('.tags-pills');
+          if (pills) {
+            const arr = tagsValue.value.split(',').map(s=>s.trim()).filter(Boolean);
+            pills.innerHTML = '';
+            arr.forEach(tag => {
+              const b = document.createElement('span');
+              b.className = 'tag-pill';
+              b.textContent = tag;
+              
+              // Apply cell formatting to tag pill
+              if (td.dataset.fontFamily) b.style.setProperty('font-family', td.dataset.fontFamily, 'important');
+              if (td.dataset.fontSize) b.style.setProperty('font-size', td.dataset.fontSize, 'important');
+              if (td.dataset.bold === 'true') b.style.setProperty('font-weight', 'bold', 'important');
+              if (td.dataset.italic === 'true') b.style.setProperty('font-style', 'italic', 'important');
+              if (td.dataset.underline === 'true') b.style.setProperty('text-decoration', 'underline', 'important');
+              if (td.dataset.cellFg) b.style.setProperty('color', td.dataset.cellFg, 'important');
+              if (td.dataset.cellBg) b.style.setProperty('background-color', td.dataset.cellBg, 'important');
+              
+              const x = document.createElement('button');
+              x.textContent = '×';
+              x.className = 'tag-x';
+              x.addEventListener('mousedown', (e) => {
+                console.log('[TAG DELETE applyFormatting] Button mousedown, tag:', tag);
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // Get fresh tags from textarea
+                const currentTags = tagsValue.value ? tagsValue.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+                console.log('[TAG DELETE applyFormatting] Current tags:', currentTags);
+                const left = currentTags.filter(t => t !== tag);
+                console.log('[TAG DELETE applyFormatting] Tags after filter:', left);
+                
+                tagsValue.value = left.length > 0 ? left.join(', ') : '';
+                console.log('[TAG DELETE applyFormatting] Updated textarea value:', tagsValue.value);
+                
+                // Remove pill from DOM
+                b.remove();
+                console.log('[TAG DELETE applyFormatting] Pill removed');
+                
+                persist();
+              });
+              b.appendChild(x);
+              pills.appendChild(b);
+            });
+          }
         }
-      } else if (formatType === 'meta') {
-        // Apply to meta display
-        const metaDisplay = document.getElementById('metaDisplay');
-        if (metaDisplay) {
-          if (formatting.fontFamily) metaDisplay.style.fontFamily = formatting.fontFamily;
-          else metaDisplay.style.fontFamily = '';
-          
-          if (formatting.fontSize) metaDisplay.style.fontSize = formatting.fontSize;
-          else metaDisplay.style.fontSize = '';
-          
-          metaDisplay.style.fontWeight = formatting.bold ? 'bold' : '';
-          metaDisplay.style.fontStyle = formatting.italic ? 'italic' : '';
-          metaDisplay.style.textDecoration = formatting.underline ? 'underline' : '';
-          metaDisplay.style.textAlign = formatting.align;
-          
-          if (formatting.fgColor) metaDisplay.style.color = formatting.fgColor;
-          else metaDisplay.style.color = '';
-          
-          if (formatting.bgColor) metaDisplay.style.backgroundColor = formatting.bgColor;
-          else metaDisplay.style.backgroundColor = '';
-        }
-      } else if (formatType === 'cell') {
-        // Apply formatting to individual cell
-        console.log('[Cell Format] Applying to element:', element);
-        console.log('[Cell Format] Formatting:', formatting);
         
-        const textarea = element.querySelector('textarea, input[type="text"]');
-        console.log('[Cell Format] Found textarea:', textarea);
-        
-        if (textarea) {
-          // Store formatting in TD dataset (parent cell)
-          const td = textarea.closest('td');
-          console.log('[Cell Format] Found TD:', td);
-          
-          if (td) {
-            if (formatting.fontFamily) td.dataset.fontFamily = formatting.fontFamily;
-            else delete td.dataset.fontFamily;
-            
-            if (formatting.fontSize) td.dataset.fontSize = formatting.fontSize;
-            else delete td.dataset.fontSize;
-            
-            td.dataset.bold = formatting.bold;
-            td.dataset.italic = formatting.italic;
-            td.dataset.underline = formatting.underline;
-            td.dataset.align = formatting.align;
-            
-            // Always store colors, even if empty
-            td.dataset.cellFg = formatting.fgColor || '';
-            td.dataset.cellBg = formatting.bgColor || '';
-            
-            console.log('[Cell Format] Stored in dataset - fg:', td.dataset.cellFg, 'bg:', td.dataset.cellBg);
-          }
-          
-          // Apply visual styles to textarea
-          if (formatting.fontFamily) {
-            textarea.style.fontFamily = formatting.fontFamily;
-          } else {
-            textarea.style.fontFamily = '';
-          }
-          
-          if (formatting.fontSize) {
-            textarea.style.fontSize = formatting.fontSize;
-          } else {
-            textarea.style.fontSize = '';
-          }
-          
-          textarea.style.fontWeight = formatting.bold ? 'bold' : '';
-          textarea.style.fontStyle = formatting.italic ? 'italic' : '';
-          textarea.style.textDecoration = formatting.underline ? 'underline' : '';
-          textarea.style.textAlign = formatting.align || 'left';
-          
-          // Apply colors - color inputs always have values
-          if (formatting.fgColor) {
-            textarea.style.setProperty('color', formatting.fgColor, 'important');
-          } else {
-            textarea.style.removeProperty('color');
-          }
-          
-          if (formatting.bgColor) {
-            textarea.style.setProperty('background-color', formatting.bgColor, 'important');
-          } else {
-            textarea.style.removeProperty('background-color');
-          }
-          
-          console.log('[Cell Format] Applied styles - color:', textarea.style.color, 'bg:', textarea.style.backgroundColor);
-        } else {
-          console.error('[Cell Format] No textarea found in element');
-        }
-      } else if (formatType === 'column') {
-        // Apply formatting to entire column via setColFormat
-        const key = element.dataset.key;
-        if (key) {
-          setColFormat(key, formatting);
-        }
-      }
       } catch(error) {
         console.error('Error in applyFormatting:', error);
       }
     }
+    
+    // Expose applyFormatting globally so it can be called from loadDay
+    window.applyFormatting = applyFormatting;
+    
+    // Reapply formatting to all rows after page load
+    function reapplyAllRowFormatting() {
+      console.log('[reapplyAllRowFormatting] Starting');
+      const tbody = document.getElementById('tbody');
+      if (!tbody) return;
+      
+      const currentDayId = getActiveDayId();
+      if (!currentDayId) return;
+      
+      const days = _getDays();
+      const day = days.find(d => d.id === currentDayId);
+      if (!day) return;
+      
+      console.log('[reapplyAllRowFormatting] Found day with', day.rows.length, 'rows');
+      
+      (day.rows || []).forEach(r => {
+        const head = tbody.querySelector(`tr[data-id="${r.id}"]`);
+        if (!head) return;
+        
+        // Reapply formatting to main row if it has formatting data
+        if (r.fontFamily || r.fontSize || r.bold || r.italic || r.underline || r.align || r.rowFg || r.rowBg) {
+          console.log('[reapplyAllRowFormatting] Row', r.id, 'has formatting:', {
+            bold: r.bold,
+            fgColor: r.rowFg,
+            bgColor: r.rowBg
+          });
+          const formatting = {
+            fontFamily: r.fontFamily || '',
+            fontSize: r.fontSize || '',
+            bold: r.bold || false,
+            italic: r.italic || false,
+            underline: r.underline || false,
+            align: r.align || '',
+            fgColor: r.rowFg || '',
+            bgColor: r.rowBg || ''
+          };
+          applyFormatting(head, formatting, 'row');
+        }
+        
+        // Reapply formatting to sub-schedule children
+        if (r.type === 'SUB' && r.children) {
+          r.children.forEach(ch => {
+            const childRow = tbody.querySelector(`tr.subchild[data-id="${ch.id}"]`);
+            if (!childRow) return;
+            
+            if (ch.fontFamily || ch.fontSize || ch.bold || ch.italic || ch.underline || ch.align) {
+              const childFormatting = {
+                fontFamily: ch.fontFamily || '',
+                fontSize: ch.fontSize || '',
+                bold: ch.bold || false,
+                italic: ch.italic || false,
+                underline: ch.underline || false,
+                align: ch.align || '',
+                fgColor: ch.subChildFg || '',
+                bgColor: ch.subChildColor || ''
+              };
+              applyFormatting(childRow, childFormatting, 'row');
+            }
+          });
+        }
+      });
+    }
+    
+    // Expose globally so loadDay can call it
+    window.reapplyAllRowFormatting = reapplyAllRowFormatting;
+    
+    // Call it immediately since we're already in DOMContentLoaded
+    setTimeout(reapplyAllRowFormatting, 100);
 
     // Row color helpers
     function applyRowBg(tr,color,isSub,isChild){
@@ -2721,7 +3732,33 @@ function addHeaderResizeGrips(){
         
         if(col.key==='drag'||col.key==='actions'){ 
           th.classList.add(col.key==='drag'?'fixed-left':'fixed-right'); 
-          th.textContent='';
+          if(col.key === 'actions') {
+            // Add format button
+            const formatBtn = document.createElement('button');
+            formatBtn.className = 'ghost';
+            formatBtn.textContent = '✎';
+            formatBtn.title = 'Format Selection';
+            formatBtn.style.cssText = 'font-size:14px; padding:4px;';
+            th.appendChild(formatBtn);
+            
+            // Open format popover when clicked
+            formatBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const selected = SelectionManager.getSelection();
+              if (selected.length === 0) {
+                alert('Please select cells or rows to format');
+                return;
+              }
+              // Get first selected cell's row
+              const firstCell = selected[0];
+              const row = firstCell.closest('tr');
+              if (row) {
+                buildCompactFormatPopover(formatBtn, row, 'row');
+              }
+            });
+          } else {
+            th.textContent='';
+          }
         }
         if(!col.fixed){ if(col.show===false) th.classList.add('col-hide'); if(col.print===false) th.classList.add('col-print-hide'); }
         theadRow.appendChild(th);
@@ -2743,10 +3780,15 @@ function addHeaderResizeGrips(){
         
         // Handle both old format (string) and new format (object with formatting)
         let val = '';
-        let cellFormatting = null;
+        // Get cell formatting from rowData.cellFormatting, not from cellData
+        let cellFormatting = rowData.cellFormatting ? rowData.cellFormatting[col.key] : null;
+        
         if (typeof cellData === 'object' && cellData.value !== undefined) {
           val = cellData.value;
-          cellFormatting = cellData.formatting;
+          // Override with cellData.formatting if it exists (backwards compatibility)
+          if (cellData.formatting) {
+            cellFormatting = cellData.formatting;
+          }
         } else {
           val = cellData;
         }
@@ -2754,7 +3796,6 @@ function addHeaderResizeGrips(){
         if(col.type==='text'){
           td.innerHTML=`<div class="cell-wrapper">
             <textarea class="cc-input" data-ckey="${col.key}" rows="2" placeholder="${col.label||''}">${val}</textarea>
-            <button class="ghost cell-format-btn" title="Format cell">✎</button>
           </div>`;
           
           // Restore saved formatting if it exists
@@ -2765,6 +3806,7 @@ function addHeaderResizeGrips(){
             if (cellFormatting.italic) td.dataset.italic = 'true';
             if (cellFormatting.underline) td.dataset.underline = 'true';
             if (cellFormatting.align) td.dataset.align = cellFormatting.align;
+            if (cellFormatting.valign) td.dataset.valign = cellFormatting.valign;
             // Colors can be empty strings, check for undefined/null instead
             if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null) {
               td.dataset.cellFg = cellFormatting.fgColor;
@@ -2773,29 +3815,28 @@ function addHeaderResizeGrips(){
               td.dataset.cellBg = cellFormatting.bgColor;
             }
             
+            // Apply vertical alignment to TD
+            if (cellFormatting.valign) {
+              td.style.setProperty('vertical-align', cellFormatting.valign, 'important');
+            }
+            
             // Apply visual styles to textarea
             const textarea = td.querySelector('textarea');
             if (textarea && cellFormatting) {
-              if (cellFormatting.fontFamily) textarea.style.setProperty('font-family', cellFormatting.fontFamily, 'important');
-              if (cellFormatting.fontSize) textarea.style.setProperty('font-size', cellFormatting.fontSize, 'important');
-              if (cellFormatting.bold) textarea.style.setProperty('font-weight', 'bold', 'important');
-              if (cellFormatting.italic) textarea.style.setProperty('font-style', 'italic', 'important');
-              if (cellFormatting.underline) textarea.style.setProperty('text-decoration', 'underline', 'important');
-              if (cellFormatting.align) textarea.style.setProperty('text-align', cellFormatting.align, 'important');
-              // Apply colors with !important flag to override CSS
+              if (cellFormatting.fontFamily) textarea.style.setProperty('font-family', cellFormatting.fontFamily);
+              if (cellFormatting.fontSize) textarea.style.setProperty('font-size', cellFormatting.fontSize);
+              if (cellFormatting.bold) textarea.style.setProperty('font-weight', 'bold');
+              if (cellFormatting.italic) textarea.style.setProperty('font-style', 'italic');
+              if (cellFormatting.underline) textarea.style.setProperty('text-decoration', 'underline');
+              if (cellFormatting.align) textarea.style.setProperty('text-align', cellFormatting.align);
+              // Apply colors
               if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
-                textarea.style.setProperty('color', cellFormatting.fgColor, 'important');
+                textarea.style.setProperty('color', cellFormatting.fgColor);
               }
               if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
-                textarea.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+                textarea.style.setProperty('background-color', cellFormatting.bgColor);
               }
             }
-          }
-          
-          // Add cell formatting
-          const formatBtn = td.querySelector('.cell-format-btn');
-          if (formatBtn) {
-            buildFormattingPopover(formatBtn, td, 'cell');
           }
         } else if(col.type==='upload'){
           td.innerHTML=`<div class="uploadBox" data-ckey="${col.key}">
@@ -2805,6 +3846,35 @@ function addHeaderResizeGrips(){
           td.dataset.vaultIds=JSON.stringify(ids); buildUploadUI(td,ids);
         } else if(col.type==='tags'){
           td.innerHTML=`<div class="tagsBox"><div class="tags-pills"></div><input class="tags-input" placeholder="Add tag and press Enter"><textarea class="cc-input tags-value" data-ckey="${col.key}" hidden>${val}</textarea></div>`;
+          
+          // Restore saved formatting if it exists
+          if (cellFormatting) {
+            if (cellFormatting.fontFamily) td.dataset.fontFamily = cellFormatting.fontFamily;
+            if (cellFormatting.fontSize) td.dataset.fontSize = cellFormatting.fontSize;
+            if (cellFormatting.bold) td.dataset.bold = 'true';
+            if (cellFormatting.italic) td.dataset.italic = 'true';
+            if (cellFormatting.underline) td.dataset.underline = 'true';
+            if (cellFormatting.align) td.dataset.align = cellFormatting.align;
+            if (cellFormatting.valign) td.dataset.valign = cellFormatting.valign;
+            if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null) {
+              td.dataset.cellFg = cellFormatting.fgColor;
+            }
+            if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null) {
+              td.dataset.cellBg = cellFormatting.bgColor;
+            }
+            
+            // Apply styles to TD for background and vertical alignment
+            if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
+              td.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+            }
+            if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
+              td.style.setProperty('color', cellFormatting.fgColor, 'important');
+            }
+            if (cellFormatting.valign) {
+              td.style.setProperty('vertical-align', cellFormatting.valign, 'important');
+            }
+          }
+          
           hydrateTagsBox(td,val);
         } else if(col.type==='separator'){
           // Separator column - show the configured character
@@ -2819,6 +3889,38 @@ function addHeaderResizeGrips(){
           td.textContent = col.separatorChar || '—';
           console.log(`Creating separator cell for ${col.key}: char="${td.textContent}", removeBorders=${col.removeBorders}`);
           td.style.textAlign = 'center';
+          
+          // Restore saved formatting if it exists
+          if (cellFormatting) {
+            if (cellFormatting.fontFamily) td.dataset.fontFamily = cellFormatting.fontFamily;
+            if (cellFormatting.fontSize) td.dataset.fontSize = cellFormatting.fontSize;
+            if (cellFormatting.bold) td.dataset.bold = 'true';
+            if (cellFormatting.italic) td.dataset.italic = 'true';
+            if (cellFormatting.underline) td.dataset.underline = 'true';
+            if (cellFormatting.align) td.dataset.align = cellFormatting.align;
+            if (cellFormatting.valign) td.dataset.valign = cellFormatting.valign;
+            if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null) {
+              td.dataset.cellFg = cellFormatting.fgColor;
+            }
+            if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null) {
+              td.dataset.cellBg = cellFormatting.bgColor;
+            }
+            
+            // Apply styles to TD
+            if (cellFormatting.fontFamily) td.style.setProperty('font-family', cellFormatting.fontFamily, 'important');
+            if (cellFormatting.fontSize) td.style.setProperty('font-size', cellFormatting.fontSize, 'important');
+            if (cellFormatting.bold) td.style.setProperty('font-weight', 'bold', 'important');
+            if (cellFormatting.italic) td.style.setProperty('font-style', 'italic', 'important');
+            if (cellFormatting.underline) td.style.setProperty('text-decoration', 'underline', 'important');
+            if (cellFormatting.align) td.style.setProperty('text-align', cellFormatting.align, 'important');
+            if (cellFormatting.valign) td.style.setProperty('vertical-align', cellFormatting.valign, 'important');
+            if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
+              td.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+            }
+            if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
+              td.style.setProperty('color', cellFormatting.fgColor, 'important');
+            }
+          }
         } else { td.innerHTML=`<input class="cc-input" data-ckey="${col.key}" type="text" placeholder="${col.label||''}" value="${val}"/>`; }
         tr.appendChild(td);
         td.querySelector('.cc-input')?.addEventListener('input', persist);
@@ -2882,7 +3984,49 @@ function addHeaderResizeGrips(){
 
     function hydrateTagsBox(td,val){
       const box=td.querySelector('.tagsBox'); const pills=box.querySelector('.tags-pills'); const input=box.querySelector('.tags-input'); const value=box.querySelector('.tags-value');
-      function render(arr){ pills.innerHTML=''; arr.forEach(tag=>{ const b=document.createElement('span'); b.className='tag-pill'; b.textContent=tag; const x=document.createElement('button'); x.textContent='×'; x.className='tag-x'; x.addEventListener('click', ()=>{ const left=arr.filter(t=>t!==tag); value.value=left.join(', '); render(left); persist(); }); b.appendChild(x); pills.appendChild(b); }); }
+      function render(arr){ 
+        pills.innerHTML=''; 
+        arr.forEach(tag=>{ 
+          const b=document.createElement('span'); 
+          b.className='tag-pill'; 
+          b.textContent=tag; 
+          
+          // Apply cell formatting to tag pill
+          if (td.dataset.fontFamily) b.style.setProperty('font-family', td.dataset.fontFamily, 'important');
+          if (td.dataset.fontSize) b.style.setProperty('font-size', td.dataset.fontSize, 'important');
+          if (td.dataset.bold === 'true') b.style.setProperty('font-weight', 'bold', 'important');
+          if (td.dataset.italic === 'true') b.style.setProperty('font-style', 'italic', 'important');
+          if (td.dataset.underline === 'true') b.style.setProperty('text-decoration', 'underline', 'important');
+          if (td.dataset.cellFg) b.style.setProperty('color', td.dataset.cellFg, 'important');
+          if (td.dataset.cellBg) b.style.setProperty('background-color', td.dataset.cellBg, 'important');
+          
+          const x=document.createElement('button'); 
+          x.textContent='×'; 
+          x.className='tag-x'; 
+          x.addEventListener('mousedown', (e)=>{ 
+            console.log('[TAG DELETE] Button mousedown, tag:', tag);
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const currentTags = current(); // Get fresh value from textarea
+            console.log('[TAG DELETE] Current tags:', currentTags);
+            const left = currentTags.filter(t=>t!==tag); 
+            console.log('[TAG DELETE] Tags after filter:', left);
+            
+            // Update textarea value
+            value.value = left.length > 0 ? left.join(', ') : '';
+            console.log('[TAG DELETE] Updated textarea value:', value.value);
+            
+            // Remove this pill from DOM
+            b.remove();
+            console.log('[TAG DELETE] Pill removed');
+            
+            persist(); 
+          }); 
+          b.appendChild(x); 
+          pills.appendChild(b); 
+        }); 
+      }
       function current(){ return value.value? value.value.split(',').map(s=>s.trim()).filter(Boolean):[]; }
       render(current()); input.addEventListener('keydown', e=>{ if(e.key==='Enter' && input.value.trim()){ const arr=current(); arr.push(input.value.trim()); value.value=Array.from(new Set(arr)).join(', '); input.value=''; render(current()); persist(); } });
     }
@@ -2914,32 +4058,6 @@ function addHeaderResizeGrips(){
         }
       }
       if(rowData.subFg){ tr.dataset.subFg=rowData.subFg; tr.style.setProperty('--sub-fg', rowData.subFg); }
-      
-      // Restore formatting properties
-      if(rowData.fontFamily){ 
-        tr.dataset.fontFamily=rowData.fontFamily; 
-        tr.style.fontFamily=rowData.fontFamily;
-      }
-      if(rowData.fontSize){ 
-        tr.dataset.fontSize=rowData.fontSize; 
-        tr.style.fontSize=rowData.fontSize;
-      }
-      if(rowData.bold){ 
-        tr.dataset.bold='true'; 
-        tr.style.fontWeight='bold';
-      }
-      if(rowData.italic){ 
-        tr.dataset.italic='true'; 
-        tr.style.fontStyle='italic';
-      }
-      if(rowData.underline){ 
-        tr.dataset.underline='true'; 
-        tr.style.textDecoration='underline';
-      }
-      if(rowData.align){ 
-        tr.dataset.align=rowData.align; 
-        tr.style.textAlign=rowData.align;
-      }
 
       const cells={}; const td=k=>{ const el=document.createElement('td'); el.dataset.key=k; return el; };
       cells.drag=td('drag'); cells.drag.className='drag'; cells.drag.textContent='⠿';
@@ -2971,7 +4089,6 @@ function addHeaderResizeGrips(){
         cells.type.querySelector('.type').addEventListener('change', e=>{ tr.dataset.type=e.target.value; recalc(); persist(); refreshAnchorSelectors(); });
       }
       cells.title=td('title');
-      function formatButtonHTML(){ return `<button class="ghost formatBtn" title="Format text">✎</button>`; }
 
       if(tr.dataset.type==='CALL TIME'){
         const anchorMode=rowData.anchorMode||'start';
@@ -2992,13 +4109,8 @@ function addHeaderResizeGrips(){
         modeSel && modeSel.addEventListener('change', ()=>{ tr.dataset.anchorMode=modeSel.value; evtSel && (evtSel.disabled=(modeSel.value==='start')); if(evtSel && evtSel.disabled) tr.dataset.anchorId=''; recalc(); persist(); refreshAnchorSelectors(); });
         evtSel && evtSel.addEventListener('change', ()=>{ tr.dataset.anchorId=evtSel.value||''; recalc(); persist(); });
 
-        // Add format button to drag cell
-        cells.drag.innerHTML = `⠿ <button class="ghost formatBtn" title="Format text" style="font-size:12px;padding:2px 4px;margin-left:2px;">✎</button>`;
-        const formatBtn=cells.drag.querySelector('.formatBtn');
-        formatBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          buildCompactFormatPopover(formatBtn, tr, 'row');
-        });
+        // Drag handle only
+        cells.drag.innerHTML = `⠿`;
       } else if(tr.dataset.type==='SUB'){
         const anchorMode=rowData.anchorMode||'eventEnd'; 
         const computedColor = getComputedStyle(document.documentElement).getPropertyValue('--sub-bg').trim() || '#e2e8f0';
@@ -3027,13 +4139,8 @@ function addHeaderResizeGrips(){
           ref.after(subTr); applyRowBg(tr, subColor, true, false); persist(); renumber(); recalc();
         });
         
-        // Add format button to drag cell
-        cells.drag.innerHTML = `⠿ <button class="ghost formatBtn" title="Format text" style="font-size:12px;padding:2px 4px;margin-left:2px;">✎</button>`;
-        const formatBtn=cells.drag.querySelector('.formatBtn');
-        formatBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          buildCompactFormatPopover(formatBtn, tr, 'row');
-        });
+        // Drag handle only
+        cells.drag.innerHTML = `⠿`;
         applyRowBg(tr, tr.dataset.subColor||subColor, true,false);
       } else {
         cells.title.innerHTML=`<div class="titleWrap">
@@ -3041,34 +4148,83 @@ function addHeaderResizeGrips(){
         </div>`;
         cells.title.querySelector('.title').addEventListener('input', ()=>{ persist(); refreshAnchorSelectors(); });
         
-        // Add format button to drag cell
-        cells.drag.innerHTML = `⠿ <button class="ghost formatBtn" title="Format text" style="font-size:12px;padding:2px 4px;margin-left:2px;">✎</button>`;
-        const formatBtn=cells.drag.querySelector('.formatBtn');
-        formatBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          buildCompactFormatPopover(formatBtn, tr, 'row');
-        });
+        // Drag handle only
+        cells.drag.innerHTML = `⠿`;
       }
 
       cells.actions=td('actions'); cells.actions.className='actions';
       cells.actions.innerHTML=`<button class="dup" title="Duplicate">⎘</button><button class="del" title="Delete">✕</button>`;
       cells.actions.querySelector('.dup').addEventListener('click', ()=>{
+        // Collect cell formatting from original row
+        const cellFormatting = {};
+        tr.querySelectorAll('td[data-key]').forEach(td => {
+          const key = td.dataset.key;
+          if (key === 'drag' || key === 'actions') return;
+          
+          if (td.dataset.fontFamily || td.dataset.fontSize || td.dataset.bold || 
+              td.dataset.italic || td.dataset.underline || td.dataset.align ||
+              td.dataset.cellFg || td.dataset.cellBg) {
+            cellFormatting[key] = {
+              fontFamily: td.dataset.fontFamily || '',
+              fontSize: td.dataset.fontSize || '',
+              bold: td.dataset.bold === 'true',
+              italic: td.dataset.italic === 'true',
+              underline: td.dataset.underline === 'true',
+              align: td.dataset.align || '',
+              fgColor: td.dataset.cellFg || '',
+              bgColor: td.dataset.cellBg || ''
+            };
+          }
+        });
+        
         const newRow = makeRow({
           id: uid(), type: tr.dataset.type, title: tr.querySelector('.title')?.value || '',
           duration: tr.querySelector('.duration')?.value ?? 0, offset: tr.querySelector('.offset')?.value ?? 0,
           anchorMode: tr.dataset.anchorMode, anchorId: tr.dataset.anchorId,
           subColor: tr.dataset.subColor || '', subFg: tr.dataset.subFg || '',
           rowBg: tr.dataset.rowBg || '', rowFg: tr.dataset.rowFg || '',
+          cellFormatting: cellFormatting,
           custom: getRowCustomFromDOM(tr)
         });
         tr.after(newRow);
         applyColumnVisibilityToRow(newRow); // Apply current column visibility
+        
         if(tr.dataset.type==='SUB'){
           const kids=collectChildren(tr);
           kids.forEach(k=>{
-            const kidData={ id:uid(), title:k.querySelector('.subTitle').value, duration:k.querySelector('.subDur').value,
-              subChildColor: k.dataset.subChildColor || '', subChildFg: k.dataset.subChildFg || '', custom: getRowCustomFromDOM(k) };
-            const clone=makeSubChildRow(newRow, kidData); newRow.after(clone);
+            // Collect cell formatting from child
+            const childCellFormatting = {};
+            k.querySelectorAll('td[data-key]').forEach(td => {
+              const key = td.dataset.key;
+              if (key === 'drag' || key === 'actions') return;
+              
+              if (td.dataset.fontFamily || td.dataset.fontSize || td.dataset.bold || 
+                  td.dataset.italic || td.dataset.underline || td.dataset.align ||
+                  td.dataset.cellFg || td.dataset.cellBg) {
+                childCellFormatting[key] = {
+                  fontFamily: td.dataset.fontFamily || '',
+                  fontSize: td.dataset.fontSize || '',
+                  bold: td.dataset.bold === 'true',
+                  italic: td.dataset.italic === 'true',
+                  underline: td.dataset.underline === 'true',
+                  align: td.dataset.align || '',
+                  fgColor: td.dataset.cellFg || '',
+                  bgColor: td.dataset.cellBg || ''
+                };
+              }
+            });
+            
+            const kidData={ 
+              id:uid(), 
+              title:k.querySelector('.subTitle').value, 
+              duration:k.querySelector('.subDur').value,
+              subChildColor: k.dataset.subChildColor || '', 
+              subChildFg: k.dataset.subChildFg || '',
+              cellFormatting: childCellFormatting,
+              custom: getRowCustomFromDOM(k) 
+            };
+            const clone=makeSubChildRow(newRow, kidData); 
+            newRow.after(clone);
             applyColumnVisibilityToRow(clone); // Apply current column visibility to sub-children
           });
         }
@@ -3101,10 +4257,15 @@ function addHeaderResizeGrips(){
             const cellData = ((rowData.custom||{})[c.key])||'';
             
             let val = '';
-            let cellFormatting = null;
+            // Get cell formatting from rowData.cellFormatting, not from cellData
+            let cellFormatting = rowData.cellFormatting ? rowData.cellFormatting[c.key] : null;
+            
             if (typeof cellData === 'object' && cellData.value !== undefined) {
               val = cellData.value;
-              cellFormatting = cellData.formatting;
+              // Override with cellData.formatting if it exists (backwards compatibility)
+              if (cellData.formatting) {
+                cellFormatting = cellData.formatting;
+              }
             } else {
               val = cellData;
             }
@@ -3117,7 +4278,7 @@ function addHeaderResizeGrips(){
             } else if(c.type==='text'){
               td.innerHTML=`<div class="cell-wrapper">
                 <textarea class="cc-input" data-ckey="${c.key}" rows="2" placeholder="${c.label||''}">${val}</textarea>
-                <button class="ghost cell-format-btn" title="Format cell">✎</button>
+                
               </div>`;
               
               if (cellFormatting) {
@@ -3143,15 +4304,16 @@ function addHeaderResizeGrips(){
                   if (cellFormatting.underline) textarea.style.textDecoration = 'underline';
                   if (cellFormatting.align) textarea.style.textAlign = cellFormatting.align;
                   if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
-                    textarea.style.setProperty('color', cellFormatting.fgColor, 'important');
+                    textarea.style.setProperty('color', cellFormatting.fgColor);
                   }
                   if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
-                    textarea.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+                    textarea.style.setProperty('background-color', cellFormatting.bgColor);
                   }
                 }
               }
               
               td.querySelector('.cc-input')?.addEventListener('input', persist);
+              
             } else if(c.type==='upload'){
               td.innerHTML=`<div class="uploadBox">
                 <div class="u-grid"></div>
@@ -3163,6 +4325,31 @@ function addHeaderResizeGrips(){
               buildUploadUI(td,ids);
             } else if(c.type==='tags'){
               td.innerHTML=`<div class="tagsBox"><div class="tags-pills"></div><input class="tags-input" placeholder="Add tag and press Enter"><textarea class="cc-input tags-value" data-ckey="${c.key}" hidden>${val}</textarea></div>`;
+              
+              // Apply cell formatting to tags cell
+              if (cellFormatting) {
+                if (cellFormatting.fontFamily) td.dataset.fontFamily = cellFormatting.fontFamily;
+                if (cellFormatting.fontSize) td.dataset.fontSize = cellFormatting.fontSize;
+                if (cellFormatting.bold) td.dataset.bold = 'true';
+                if (cellFormatting.italic) td.dataset.italic = 'true';
+                if (cellFormatting.underline) td.dataset.underline = 'true';
+                if (cellFormatting.align) td.dataset.align = cellFormatting.align;
+                if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null) {
+                  td.dataset.cellFg = cellFormatting.fgColor;
+                }
+                if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null) {
+                  td.dataset.cellBg = cellFormatting.bgColor;
+                }
+                
+                // Apply styles to TD for background
+                if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
+                  td.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+                }
+                if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
+                  td.style.setProperty('color', cellFormatting.fgColor, 'important');
+                }
+              }
+              
               hydrateTagsBox(td,val);
             } else {
               td.innerHTML=`<input class="cc-input" data-ckey="${c.key}" type="text" placeholder="${c.label||''}" value="${val}"/>`;
@@ -3208,17 +4395,35 @@ function addHeaderResizeGrips(){
         }
       });
       cells.drag.addEventListener('click', (e) => {
-        if (e.shiftKey || e.metaKey || e.ctrlKey) {
-          e.preventDefault();
-          e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Plain click: clear selection and select only this row
+        if (!e.shiftKey && !e.metaKey && !e.ctrlKey) {
+          clearSelection();
+          selectedRows.add(tr);
+          tr.classList.add('selected');
+        } else {
+          // Modifier key: use toggle behavior
           toggleRowSelection(tr, e.shiftKey);
         }
       });
       cells.drag.style.cursor = 'pointer';
-      cells.drag.title = 'Drag to reorder | Shift/Cmd+click to multi-select';
+      cells.drag.title = 'Click to select | Shift/Cmd+click to multi-select | Drag to reorder';
 
       if(rowData.type==='SUB' && Array.isArray(rowData.children)){ tr._pendingChildren=rowData.children.map(ch=> makeSubChildRow(tr, ch)); }
       tr.classList.toggle('subheader', tr.dataset.type==='SUB');
+      
+      // Restore cell-based formatting if present
+      if (rowData.cellFormatting) {
+        Object.keys(rowData.cellFormatting).forEach(key => {
+          const cell = tr.querySelector(`td[data-key="${key}"]`);
+          if (cell) {
+            applyFormatting(cell, rowData.cellFormatting[key]);
+          }
+        });
+      }
+      
       return tr;
     }
 
@@ -3234,32 +4439,6 @@ function addHeaderResizeGrips(){
         // Default to white text for subevents
         tr.dataset.subChildFg='#ffffff';
         tr.style.setProperty('--subchild-fg', '#ffffff');
-      }
-      
-      // Restore formatting properties
-      if(child.fontFamily){ 
-        tr.dataset.fontFamily=child.fontFamily; 
-        tr.style.fontFamily=child.fontFamily;
-      }
-      if(child.fontSize){ 
-        tr.dataset.fontSize=child.fontSize; 
-        tr.style.fontSize=child.fontSize;
-      }
-      if(child.bold){ 
-        tr.dataset.bold='true'; 
-        tr.style.fontWeight='bold';
-      }
-      if(child.italic){ 
-        tr.dataset.italic='true'; 
-        tr.style.fontStyle='italic';
-      }
-      if(child.underline){ 
-        tr.dataset.underline='true'; 
-        tr.style.textDecoration='underline';
-      }
-      if(child.align){ 
-        tr.dataset.align=child.align; 
-        tr.style.textAlign=child.align;
       }
 
       const td=k=>{ const el=document.createElement('td'); el.dataset.key=k; return el; };
@@ -3308,23 +4487,41 @@ function addHeaderResizeGrips(){
         <input class="subTitle" value="${(child.title||'Sub Event').replace(/"/g,'&quot;')}">
       </div>`;
       
-      // Add format button to drag cell
-      cells.drag.innerHTML = `⋮⋮ <button class="ghost formatBtn" title="Format text" style="font-size:11px;padding:1px 3px;margin-left:2px;">✎</button>`;
-      const formatBtn=cells.drag.querySelector('.formatBtn');
-      formatBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        buildCompactFormatPopover(formatBtn, tr, 'row');
-      });
+      // Drag handle only
+      cells.drag.innerHTML = `⋮⋮`;
 
       cells.actions=td('actions'); cells.actions.className='actions'; cells.actions.innerHTML=`<button class="dup">⎘</button><button class="del">✕</button>`;
       cells.actions.querySelector('.dup').addEventListener('click', ()=>{
+        // Collect cell formatting from original
+        const cellFormatting = {};
+        tr.querySelectorAll('td[data-key]').forEach(td => {
+          const key = td.dataset.key;
+          if (key === 'drag' || key === 'actions') return;
+          
+          if (td.dataset.fontFamily || td.dataset.fontSize || td.dataset.bold || 
+              td.dataset.italic || td.dataset.underline || td.dataset.align ||
+              td.dataset.cellFg || td.dataset.cellBg) {
+            cellFormatting[key] = {
+              fontFamily: td.dataset.fontFamily || '',
+              fontSize: td.dataset.fontSize || '',
+              bold: td.dataset.bold === 'true',
+              italic: td.dataset.italic === 'true',
+              underline: td.dataset.underline === 'true',
+              align: td.dataset.align || '',
+              fgColor: td.dataset.cellFg || '',
+              bgColor: td.dataset.cellBg || ''
+            };
+          }
+        });
+        
         const subType = tr.dataset.subType||'event';
         const childData = { 
           id:uid(), 
           title: cells['title'].querySelector('.subTitle').value, 
           subType: subType,
           subChildColor: tr.dataset.subChildColor||'', 
-          subChildFg: tr.dataset.subChildFg||'', 
+          subChildFg: tr.dataset.subChildFg||'',
+          cellFormatting: cellFormatting,
           custom: getRowCustomFromDOM(tr) 
         };
         // Copy either duration or offset depending on type
@@ -3338,6 +4535,7 @@ function addHeaderResizeGrips(){
         const clone=makeSubChildRow(parentTr, childData);
         tr.after(clone); 
         applyColumnVisibilityToRow(clone); // Apply current column visibility
+        
         renumber(); recalc(); persist();
       });
       cells.actions.querySelector('.del').addEventListener('click', ()=>{ tr.remove(); renumber(); recalc(); persist(); });
@@ -3364,10 +4562,15 @@ function addHeaderResizeGrips(){
             const cellData = ((child.custom||{})[c.key])||'';
             
             let val = '';
-            let cellFormatting = null;
+            // Get cell formatting from child.cellFormatting, not from cellData
+            let cellFormatting = child.cellFormatting ? child.cellFormatting[c.key] : null;
+            
             if (typeof cellData === 'object' && cellData.value !== undefined) {
               val = cellData.value;
-              cellFormatting = cellData.formatting;
+              // Override with cellData.formatting if it exists (backwards compatibility)
+              if (cellData.formatting) {
+                cellFormatting = cellData.formatting;
+              }
             } else {
               val = cellData;
             }
@@ -3380,7 +4583,7 @@ function addHeaderResizeGrips(){
             } else if(c.type==='text'){
               td.innerHTML=`<div class="cell-wrapper">
                 <textarea class="cc-input" data-ckey="${c.key}" rows="2" placeholder="${c.label||''}">${val}</textarea>
-                <button class="ghost cell-format-btn" title="Format cell">✎</button>
+                
               </div>`;
               
               if (cellFormatting) {
@@ -3406,15 +4609,16 @@ function addHeaderResizeGrips(){
                   if (cellFormatting.underline) textarea.style.textDecoration = 'underline';
                   if (cellFormatting.align) textarea.style.textAlign = cellFormatting.align;
                   if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
-                    textarea.style.setProperty('color', cellFormatting.fgColor, 'important');
+                    textarea.style.setProperty('color', cellFormatting.fgColor);
                   }
                   if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
-                    textarea.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+                    textarea.style.setProperty('background-color', cellFormatting.bgColor);
                   }
                 }
               }
               
               td.querySelector('.cc-input')?.addEventListener('input', persist);
+              
             } else if(c.type==='upload'){
               td.innerHTML=`<div class="uploadBox">
                 <div class="u-grid"></div>
@@ -3426,6 +4630,31 @@ function addHeaderResizeGrips(){
               buildUploadUI(td,ids);
             } else if(c.type==='tags'){
               td.innerHTML=`<div class="tagsBox"><div class="tags-pills"></div><input class="tags-input" placeholder="Add tag and press Enter"><textarea class="cc-input tags-value" data-ckey="${c.key}" hidden>${val}</textarea></div>`;
+              
+              // Apply cell formatting to tags cell
+              if (cellFormatting) {
+                if (cellFormatting.fontFamily) td.dataset.fontFamily = cellFormatting.fontFamily;
+                if (cellFormatting.fontSize) td.dataset.fontSize = cellFormatting.fontSize;
+                if (cellFormatting.bold) td.dataset.bold = 'true';
+                if (cellFormatting.italic) td.dataset.italic = 'true';
+                if (cellFormatting.underline) td.dataset.underline = 'true';
+                if (cellFormatting.align) td.dataset.align = cellFormatting.align;
+                if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null) {
+                  td.dataset.cellFg = cellFormatting.fgColor;
+                }
+                if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null) {
+                  td.dataset.cellBg = cellFormatting.bgColor;
+                }
+                
+                // Apply styles to TD for background
+                if (cellFormatting.bgColor !== undefined && cellFormatting.bgColor !== null && cellFormatting.bgColor !== '') {
+                  td.style.setProperty('background-color', cellFormatting.bgColor, 'important');
+                }
+                if (cellFormatting.fgColor !== undefined && cellFormatting.fgColor !== null && cellFormatting.fgColor !== '') {
+                  td.style.setProperty('color', cellFormatting.fgColor, 'important');
+                }
+              }
+              
               hydrateTagsBox(td,val);
             } else {
               td.innerHTML=`<input class="cc-input" data-ckey="${c.key}" type="text" placeholder="${c.label||''}" value="${val}"/>`;
@@ -3438,6 +4667,17 @@ function addHeaderResizeGrips(){
 
       tr.addEventListener('dragstart', e=>{ tr.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
       tr.addEventListener('dragend', ()=>{ tr.classList.remove('dragging'); persist(); recalc(); });
+      
+      // Restore cell-based formatting if present
+      if (child.cellFormatting) {
+        Object.keys(child.cellFormatting).forEach(key => {
+          const cell = tr.querySelector(`td[data-key="${key}"]`);
+          if (cell) {
+            applyFormatting(cell, child.cellFormatting[key]);
+          }
+        });
+      }
+      
       return tr;
     }
 
@@ -3489,12 +4729,12 @@ function addHeaderResizeGrips(){
       const s=readState(); const rowsOut=[];
       qsa('tbody tr').forEach(tr=>{
         if(tr.classList.contains('subchild')) return;
-        const row={ id:tr.dataset.id, type:tr.dataset.type, title: tr.querySelector('.title')?.value || '', duration: tr.querySelector('.duration')?.value ?? 0, offset: tr.querySelector('.offset')?.value ?? 0, anchorMode: tr.dataset.anchorMode || 'start', anchorId: tr.dataset.anchorId || '', subColor: tr.dataset.subColor || '', subFg: tr.dataset.subFg || '', rowBg: tr.dataset.rowBg || '', rowFg: tr.dataset.rowFg || '', custom: getRowCustomFromDOM(tr), children: [] };
+        const row={ id:tr.dataset.id, type:tr.dataset.type, title: tr.querySelector('.title')?.value || '', duration: tr.querySelector('.duration')?.value ?? 0, offset: tr.querySelector('.offset')?.value ?? 0, anchorMode: tr.dataset.anchorMode || 'start', anchorId: tr.dataset.anchorId || '', subColor: tr.dataset.subColor || '', subFg: tr.dataset.subFg || '', rowBg: tr.dataset.rowBg || '', rowFg: tr.dataset.rowFg || '', fontFamily: tr.dataset.fontFamily || '', fontSize: tr.dataset.fontSize || '', bold: tr.dataset.bold === 'true', italic: tr.dataset.italic === 'true', underline: tr.dataset.underline === 'true', align: tr.dataset.align || '', custom: getRowCustomFromDOM(tr), children: [] };
         if(tr.dataset.type==='SUB'){
           let next=tr.nextElementSibling;
           while(next && next.classList.contains('subchild') && next.dataset.parent===tr.dataset.id){
             rowsOut.push; // noop prevent linter
-            const child={ id: next.dataset.id, title: next.querySelector('.subTitle').value, duration: next.querySelector('.subDur').value, subChildColor: next.dataset.subChildColor || '', subChildFg: next.dataset.subChildFg || '', custom: getRowCustomFromDOM(next) };
+            const child={ id: next.dataset.id, title: next.querySelector('.subTitle').value, duration: next.querySelector('.subDur').value, subChildColor: next.dataset.subChildColor || '', subChildFg: next.dataset.subChildFg || '', fontFamily: next.dataset.fontFamily || '', fontSize: next.dataset.fontSize || '', bold: next.dataset.bold === 'true', italic: next.dataset.italic === 'true', underline: next.dataset.underline === 'true', align: next.dataset.align || '', custom: getRowCustomFromDOM(next) };
             row.children.push(child);
             next=next.nextElementSibling;
           }
@@ -3514,28 +4754,49 @@ function addHeaderResizeGrips(){
         } else { 
           idx+=1; 
           td.textContent=idx;
-          // Make row number inherit row text color (not background color)
-          const rowFgColor = tr.dataset.rowFg || tr.dataset.subFg;
-          if(rowFgColor) {
-            td.style.color = rowFgColor;
-          } else {
-            td.style.color = '';
-          }
-        } 
+        }
+        // Reapply cell formatting from dataset
+        reapplyCellFormatting(td);
       }); 
     }
 
     // Timeline
     function buildEventTimeline(){
-      const rows=qsa('tbody tr'); const timeline={}; const base=toMinutes(readState().start || scheduleStart?.value || '08:00'); let cursor=base;
+      const rows=qsa('tbody tr'); const timeline={}; const base=toMinutes(readState().start || scheduleStart?.value || '8:00'); let cursor=base;
       rows.forEach(tr=>{ if(tr.dataset.type==='EVENT' && !tr.classList.contains('subchild')){ const dur=Number(tr.querySelector('.duration')?.value)||0; const id=tr.dataset.id; timeline[id]={start:cursor,end:cursor+dur,title:tr.querySelector('.title')?.value||'Untitled'}; cursor+=dur; } });
       return {timeline, base};
     }
+    function reapplyCellFormatting(td) {
+      // Reapply formatting from TD dataset (used after recalc updates content)
+      if (!td || !td.dataset) return;
+      
+      const formatting = {};
+      if (td.dataset.fontFamily) formatting.fontFamily = td.dataset.fontFamily;
+      if (td.dataset.fontSize) formatting.fontSize = td.dataset.fontSize;
+      if (td.dataset.bold) formatting.bold = td.dataset.bold === 'true';
+      if (td.dataset.italic) formatting.italic = td.dataset.italic === 'true';
+      if (td.dataset.underline) formatting.underline = td.dataset.underline === 'true';
+      if (td.dataset.align) formatting.align = td.dataset.align;
+      if (td.dataset.cellFg) formatting.fgColor = td.dataset.cellFg;
+      if (td.dataset.cellBg) formatting.bgColor = td.dataset.cellBg;
+      
+      if (Object.keys(formatting).length > 0) {
+        applyFormatting(td, formatting);
+      }
+    }
+    
     function recalc(){
       const {timeline, base}=buildEventTimeline();
       qsa('tbody tr').forEach(tr=>{
         const s=tr.querySelector('td[data-key="start"]'), e=tr.querySelector('td[data-key="end"]'); if(!s||!e) return;
-        if(tr.dataset.type==='EVENT'){ const t=timeline[tr.dataset.id]; s.textContent=hhmmToAmPm(minutesToHHMM(t.start)); e.textContent=hhmmToAmPm(minutesToHHMM(t.end)); }
+        if(tr.dataset.type==='EVENT'){ 
+          const t=timeline[tr.dataset.id]; 
+          s.textContent=formatTime(minutesToHHMM(t.start)); 
+          e.textContent=formatTime(minutesToHHMM(t.end)); 
+          // Reapply cell formatting from dataset
+          reapplyCellFormatting(s);
+          reapplyCellFormatting(e);
+        }
         else if(tr.dataset.type==='CALL TIME'){
   const mode   = tr.dataset.anchorMode || 'start';
   const offset = Number(tr.querySelector('.offset')?.value) || 0;
@@ -3544,12 +4805,16 @@ function addHeaderResizeGrips(){
     const t = timeline[tr.dataset.anchorId];
     if (t) anchor = (mode==='eventStart' ? t.start : t.end);
   }
-  const timeText = hhmmToAmPm(minutesToHHMM(anchor + offset));
+  const timeText = formatTime(minutesToHHMM(anchor + offset));
   
   // If END column is hidden, show time in START cell; otherwise leave START blank
   const endColHidden = e.classList.contains('col-hide') || e.style.display === 'none';
   s.textContent = endColHidden ? timeText : '';
   e.textContent = timeText;
+  
+  // Reapply cell formatting from dataset
+  reapplyCellFormatting(s);
+  reapplyCellFormatting(e);
 }
         else if(tr.dataset.type==='SUB'){ 
           const mode=tr.dataset.anchorMode||'eventEnd'; 
@@ -3558,12 +4823,16 @@ function addHeaderResizeGrips(){
           let anchor=base; 
           if(mode==='eventStart' && timeline[anchorId]) anchor=timeline[anchorId].start; 
           if(mode==='eventEnd' && timeline[anchorId]) anchor=timeline[anchorId].end; 
-          const timeText = hhmmToAmPm(minutesToHHMM(anchor+offset));
+          const timeText = formatTime(minutesToHHMM(anchor+offset));
           
           // If END column is hidden, show time in START cell; otherwise leave START blank
           const endColHidden = e.classList.contains('col-hide') || e.style.display === 'none';
           s.textContent = endColHidden ? timeText : '';
           e.textContent = timeText; 
+          
+          // Reapply cell formatting from dataset
+          reapplyCellFormatting(s);
+          reapplyCellFormatting(e);
           
           let subCursor=anchor+offset; 
           let subStartTime=anchor+offset; // Track sub-schedule start for call time anchoring
@@ -3577,22 +4846,28 @@ function addHeaderResizeGrips(){
             if(subType==='call'){
               // Call time: uses offset from current cursor position
               const callOffset=Number(next.querySelector('.subOffset')?.value)||0;
-              const callTimeText = hhmmToAmPm(minutesToHHMM(subCursor+callOffset));
+              const callTimeText = formatTime(minutesToHHMM(subCursor+callOffset));
               const endColHidden = eCell && (eCell.classList.contains('col-hide') || eCell.style.display === 'none');
               sCell && (sCell.textContent = endColHidden ? callTimeText : ''); 
               eCell && (eCell.textContent = callTimeText);
+              // Reapply cell formatting from dataset
+              if(sCell) reapplyCellFormatting(sCell);
+              if(eCell) reapplyCellFormatting(eCell);
               // Don't advance cursor for call times
             } else {
               // Regular event: adds duration
               const dur=Number(next.querySelector('.subDur')?.value)||0;
               if(dur===0){
                 sCell && (sCell.textContent='—'); 
-                eCell && (eCell.textContent=hhmmToAmPm(minutesToHHMM(subCursor)));
+                eCell && (eCell.textContent=formatTime(minutesToHHMM(subCursor)));
               } else {
-                sCell && (sCell.textContent=hhmmToAmPm(minutesToHHMM(subCursor))); 
-                eCell && (eCell.textContent=hhmmToAmPm(minutesToHHMM(subCursor+dur))); 
+                sCell && (sCell.textContent=formatTime(minutesToHHMM(subCursor))); 
+                eCell && (eCell.textContent=formatTime(minutesToHHMM(subCursor+dur))); 
                 subCursor+=dur;
               }
+              // Reapply cell formatting from dataset
+              if(sCell) reapplyCellFormatting(sCell);
+              if(eCell) reapplyCellFormatting(eCell);
             }
             next=next.nextElementSibling; 
           } 
@@ -3709,7 +4984,7 @@ function addHeaderResizeGrips(){
             dayNumber: 1,
             date: data.meta?.date || '',
             dow: data.meta?.dow || '',
-            scheduleStart: data.start || '08:00',
+            scheduleStart: data.start || '8:00',
             rows: data.rows || [],
             palette: data.palette || DEFAULT_PALETTE.slice(),
             cols: data.cols || DEFAULT_CUSTOM_COLS.slice()
@@ -4124,65 +5399,27 @@ function addHeaderResizeGrips(){
       let bodyHTML = '<tbody>';
       const rows = Array.from(tbody.querySelectorAll('tr'));
       
+      // Get saved row heights
+      const rowHeights = getRowH();
+      
       for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
         const row = rows[rowIndex];
         const isLastRow = (rowIndex === rows.length - 1);
         const rowType = row.dataset.type;
         const isSubchild = row.classList.contains('subchild');
         
-        // Get row colors - ONLY use dataset for backgrounds (to avoid dark theme), but allow computed for text
-        let rowBgColor = '';
-        let rowFgColor = '';
-        
-        // Background: strictly from dataset only
-        if (isSubchild) {
-          rowBgColor = row.dataset.subChildColor || '';
-        } else if (rowType === 'SUB') {
-          rowBgColor = row.dataset.subColor || '';
-        } else {
-          rowBgColor = row.dataset.rowBg || '';
-        }
-        
-        // Foreground: dataset first, then computed
-        if (isSubchild) {
-          rowFgColor = row.dataset.subChildFg || '';
-        } else if (rowType === 'SUB') {
-          rowFgColor = row.dataset.subFg || '';
-        } else {
-          rowFgColor = row.dataset.rowFg || '';
-        }
-        
-        // If no dataset foreground color, use computed (for better text visibility)
-        if (!rowFgColor) {
-          const computed = window.getComputedStyle(row);
-          rowFgColor = computed.color || '';
-        }
-        
-        // Extract row-level text formatting from dataset
-        const rowFontFamily = row.dataset.fontFamily || '';
-        const rowFontSize = row.dataset.fontSize || '';
-        const rowBold = row.dataset.bold === 'true';
-        const rowItalic = row.dataset.italic === 'true';
-        const rowUnderline = row.dataset.underline === 'true';
-        const rowAlign = row.dataset.align || '';
+        // NO ROW-LEVEL FORMATTING - pure cell-based only
+        // All formatting comes from individual cell.dataset properties
         
         const rowClass = row.className || '';
+        const rowId = row.dataset.id;
         let rowStyle = '';
-        if (rowBgColor) rowStyle += `background-color: ${rowBgColor}; `;
-        if (rowFgColor) rowStyle += `color: ${rowFgColor}; `;
-        if (rowFontFamily) rowStyle += `font-family: ${escapeFontFamily(rowFontFamily)}; `;
-        if (rowFontSize) rowStyle += `font-size: ${rowFontSize}; `;
-        if (rowBold) rowStyle += `font-weight: bold; `;
-        if (rowItalic) rowStyle += `font-style: italic; `;
-        if (rowUnderline) rowStyle += `text-decoration: underline; `;
-        if (rowAlign) rowStyle += `text-align: ${rowAlign}; `;
-        
-        // Debug log first few rows
-        if (rowIndex < 3) {
-          console.log(`Row ${rowIndex}: bg=${rowBgColor}, fg=${rowFgColor}, font=${rowFontFamily}, style="${rowStyle}"`);
+        if (rowId && rowHeights[rowId]) {
+          // Convert px to pt for PDF (1px ≈ 0.75pt)
+          const heightPt = Math.round(rowHeights[rowId] * 0.75);
+          rowStyle = ` style="height: ${heightPt}pt;"`;
         }
-        
-        bodyHTML += `<tr class="${rowClass}" ${rowStyle ? `style="${rowStyle}"` : ''}>`;
+        bodyHTML += `<tr class="${rowClass}"${rowStyle}>`;
         
         const cells = Array.from(row.querySelectorAll('td'));
         for (let i = 0; i < cells.length; i++) {
@@ -4202,17 +5439,66 @@ function addHeaderResizeGrips(){
           if (key === 'drag') {
             if (window.selectedPrintColumns && window.selectedPrintColumns.length > 0 && !window.selectedPrintColumns.includes('idx')) continue;
             
-            // Find the idx cell in this row and extract its number
+            // Find the idx cell in this row and extract its number and formatting
             const idxCell = row.querySelector('td[data-key="idx"]');
             cellContent = idxCell ? idxCell.textContent.trim() : '';
             
-            // Add styling for idx column, including corner radius for last row
+            // Extract formatting from idx cell
+            let idxTextStyle = '';
+            let idxBgStyle = '';
+            
+            if (idxCell) {
+              const idxComputed = window.getComputedStyle(idxCell);
+              
+              // Get all text formatting
+              const fontSize = idxComputed.fontSize;
+              const fontFamily = idxComputed.fontFamily;
+              const fontWeight = idxComputed.fontWeight;
+              const fontStyle = idxComputed.fontStyle;
+              const textDecoration = idxComputed.textDecoration;
+              const color = idxComputed.color;
+              
+              if (fontSize) idxTextStyle += `font-size: ${fontSize} !important; `;
+              if (fontFamily && fontFamily !== 'inherit') idxTextStyle += `font-family: ${escapeFontFamily(fontFamily)} !important; `;
+              if (fontWeight && fontWeight !== 'normal' && fontWeight !== '400') idxTextStyle += `font-weight: ${fontWeight} !important; `;
+              if (fontStyle && fontStyle !== 'normal') idxTextStyle += `font-style: ${fontStyle} !important; `;
+              if (textDecoration && textDecoration !== 'none' && !textDecoration.includes('none')) idxTextStyle += `text-decoration: ${textDecoration} !important; `;
+              if (color && color !== 'rgba(0, 0, 0, 0)') idxTextStyle += `color: ${color} !important; `;
+              
+              // Get background - check dataset first, then computed
+              const cellBg = idxCell.dataset.cellBg;
+              if (cellBg) {
+                idxBgStyle = `background-color: ${cellBg} !important; `;
+              } else {
+                const bgColor = idxComputed.backgroundColor;
+                if (bgColor && 
+                    bgColor !== 'rgba(0, 0, 0, 0)' && 
+                    bgColor !== 'transparent' &&
+                    bgColor !== 'rgb(255, 255, 255)' &&
+                    bgColor !== 'rgb(15, 18, 23)' &&
+                    bgColor !== 'rgb(11, 15, 21)') {
+                  idxBgStyle = `background-color: ${bgColor} !important; `;
+                }
+              }
+            }
+            
+            // Base styling for idx column
             let idxStyle = 'border: 1pt solid #666 !important; border-right: none !important; text-align: center; vertical-align: middle; padding: 3pt 4pt !important;';
             if (isLastRow) {
               idxStyle += ' border-bottom-left-radius: 8pt !important;';
             }
             
-            bodyHTML += `<td style="${idxStyle}">${cellContent}</td>`;
+            // Add background to TD
+            if (idxBgStyle) {
+              idxStyle += idxBgStyle;
+            }
+            
+            // Wrap content in span with text formatting
+            if (idxTextStyle) {
+              bodyHTML += `<td style="${idxStyle}"><span style="${idxTextStyle}">${cellContent}</span></td>`;
+            } else {
+              bodyHTML += `<td style="${idxStyle}">${cellContent}</td>`;
+            }
             continue;
           }
           
@@ -4240,7 +5526,7 @@ function addHeaderResizeGrips(){
               if (titleInput) {
                 cellContent = titleInput.value || '';
                 
-                // Cell colors: dataset ONLY for backgrounds, computed OK for foreground
+                // Cell colors: dataset ONLY, no row fallbacks
                 const cellFg = cell.dataset.cellFg;
                 const cellBg = cell.dataset.cellBg;
                 
@@ -4269,25 +5555,7 @@ function addHeaderResizeGrips(){
                 let textDecoration = computedStyle.textDecoration;
                 let textAlign = computedStyle.textAlign;
                 
-                // Fallback to row-level formatting if cell doesn't have explicit formatting
-                if (!fontFamily || fontFamily === 'inherit' || fontFamily.includes('system-ui')) {
-                  fontFamily = rowFontFamily;
-                }
-                if (!fontSize || fontSize === 'inherit') {
-                  fontSize = rowFontSize;
-                }
-                if (fontWeight === 'normal' || fontWeight === '400') {
-                  if (rowBold) fontWeight = 'bold';
-                }
-                if (fontStyle === 'normal') {
-                  if (rowItalic) fontStyle = 'italic';
-                }
-                if (textDecoration === 'none') {
-                  if (rowUnderline) textDecoration = 'underline';
-                }
-                if (!textAlign || textAlign === 'start' || textAlign === 'left') {
-                  textAlign = rowAlign;
-                }
+                // NO ROW FALLBACKS - use only what's explicitly set on cell or computed from input
                 
                 // Extract border properties
                 const borderRadius = computedStyle.borderRadius;
@@ -4297,6 +5565,7 @@ function addHeaderResizeGrips(){
                 
                 // Extract background from computed style as final fallback
                 if (!cellBg && !titleInput.style.backgroundColor) {
+                  // First check input's background
                   const bgColor = computedStyle.backgroundColor;
                   // Exclude white, transparent, and default theme backgrounds (#0f1217 dark, #ffffff light)
                   if (bgColor && 
@@ -4306,26 +5575,40 @@ function addHeaderResizeGrips(){
                       bgColor !== 'rgb(15, 18, 23)' &&  // #0f1217 dark theme
                       bgColor !== 'rgb(11, 15, 21)') {  // #0b0f15 darker variant
                     cellBgStyle += `background-color: ${bgColor} !important; `;
+                  } else {
+                    // Check TD background
+                    const tdStyle = window.getComputedStyle(cell);
+                    const tdBgColor = tdStyle.backgroundColor;
+                    if (tdBgColor && 
+                        tdBgColor !== 'rgba(0, 0, 0, 0)' && 
+                        tdBgColor !== 'transparent' && 
+                        tdBgColor !== 'rgb(255, 255, 255)' &&
+                        tdBgColor !== 'rgb(15, 18, 23)' &&
+                        tdBgColor !== 'rgb(11, 15, 21)') {
+                      cellBgStyle += `background-color: ${tdBgColor} !important; `;
+                    }
                   }
                 }
                 
-                // Apply font properties (without minimum threshold to catch all formatting)
+                // Apply font properties - only include non-default values
                 if (fontSize) {
                   cellTextStyle += `font-size: ${fontSize} !important; `;
                 }
-                if (fontFamily && fontFamily !== 'inherit') {
+                if (fontFamily && fontFamily !== 'inherit' && !fontFamily.includes('system-ui')) {
                   cellTextStyle += `font-family: ${escapeFontFamily(fontFamily)} !important; `;
                 }
+                // Only include bold if not normal
                 if (fontWeight && fontWeight !== 'normal' && fontWeight !== '400') {
                   cellTextStyle += `font-weight: ${fontWeight} !important; `;
                 }
+                // Only include italic if not normal
                 if (fontStyle && fontStyle !== 'normal') {
                   cellTextStyle += `font-style: ${fontStyle} !important; `;
                 }
-                if (textDecoration && textDecoration !== 'none' && !textDecoration.includes('none')) {
+                if (textDecoration && !textDecoration.includes('none')) {
                   cellTextStyle += `text-decoration: ${textDecoration} !important; `;
                 }
-                if (textAlign && textAlign !== 'left') {
+                if (textAlign && textAlign !== 'left' && textAlign !== 'start') {
                   cellTextStyle += `text-align: ${textAlign} !important; `;
                 }
                 
@@ -4351,7 +5634,7 @@ function addHeaderResizeGrips(){
                 } else {
                   cellContent = input.value || '';
                   
-                  // Cell colors: dataset ONLY for backgrounds, computed OK for foreground
+                  // Cell colors: dataset ONLY, no row fallbacks
                   const cellFg = cell.dataset.cellFg;
                   const cellBg = cell.dataset.cellBg;
                   
@@ -4382,25 +5665,7 @@ function addHeaderResizeGrips(){
                   let textDecoration = inputStyle.textDecoration;
                   let textAlign = inputStyle.textAlign;
                   
-                  // Fallback to row-level formatting if cell doesn't have explicit formatting
-                  if (!fontFamily || fontFamily === 'inherit' || fontFamily.includes('system-ui')) {
-                    fontFamily = rowFontFamily;
-                  }
-                  if (!fontSize || fontSize === 'inherit') {
-                    fontSize = rowFontSize;
-                  }
-                  if (fontWeight === 'normal' || fontWeight === '400') {
-                    if (rowBold) fontWeight = 'bold';
-                  }
-                  if (fontStyle === 'normal') {
-                    if (rowItalic) fontStyle = 'italic';
-                  }
-                  if (textDecoration === 'none') {
-                    if (rowUnderline) textDecoration = 'underline';
-                  }
-                  if (!textAlign || textAlign === 'start' || textAlign === 'left') {
-                    textAlign = rowAlign;
-                  }
+                  // NO ROW FALLBACKS - use only what's explicitly set on cell or computed from input
                   
                   // Extract border properties from input
                   const borderRadius = inputStyle.borderRadius;
@@ -4410,6 +5675,7 @@ function addHeaderResizeGrips(){
                   
                   // Extract background from computed style as final fallback
                   if (!cellBg && !input.style.backgroundColor) {
+                    // First check input's background
                     const bgColor = inputStyle.backgroundColor;
                     // Exclude white, transparent, and default theme backgrounds (#0f1217 dark, #ffffff light)
                     if (bgColor && 
@@ -4419,23 +5685,37 @@ function addHeaderResizeGrips(){
                         bgColor !== 'rgb(15, 18, 23)' &&  // #0f1217 dark theme
                         bgColor !== 'rgb(11, 15, 21)') {  // #0b0f15 darker variant
                       cellBgStyle += `background-color: ${bgColor} !important; `;
+                    } else {
+                      // Check TD background
+                      const tdStyle = window.getComputedStyle(cell);
+                      const tdBgColor = tdStyle.backgroundColor;
+                      if (tdBgColor && 
+                          tdBgColor !== 'rgba(0, 0, 0, 0)' && 
+                          tdBgColor !== 'transparent' && 
+                          tdBgColor !== 'rgb(255, 255, 255)' &&
+                          tdBgColor !== 'rgb(15, 18, 23)' &&
+                          tdBgColor !== 'rgb(11, 15, 21)') {
+                        cellBgStyle += `background-color: ${tdBgColor} !important; `;
+                      }
                     }
                   }
                   
-                  // Apply font properties
+                  // Apply font properties - only include non-default values
                   if (fontSize) {
                     cellTextStyle += `font-size: ${fontSize} !important; `;
                   }
-                  if (fontFamily && fontFamily !== 'inherit') {
+                  if (fontFamily && fontFamily !== 'inherit' && !fontFamily.includes('system-ui')) {
                     cellTextStyle += `font-family: ${escapeFontFamily(fontFamily)} !important; `;
                   }
+                  // Only include bold if not normal
                   if (fontWeight && fontWeight !== 'normal' && fontWeight !== '400') {
                     cellTextStyle += `font-weight: ${fontWeight} !important; `;
                   }
+                  // Only include italic if not normal
                   if (fontStyle && fontStyle !== 'normal') {
                     cellTextStyle += `font-style: ${fontStyle} !important; `;
                   }
-                  if (textDecoration && textDecoration !== 'none' && !textDecoration.includes('none')) {
+                  if (textDecoration && !textDecoration.includes('none')) {
                     cellTextStyle += `text-decoration: ${textDecoration} !important; `;
                   }
                   if (textAlign && textAlign !== 'left' && textAlign !== 'start') {
@@ -4455,6 +5735,51 @@ function addHeaderResizeGrips(){
                 // Special handling for separator columns
                 if (cell.dataset.type === 'separator') {
                   cellContent = cell.textContent.trim() || '—'; // Use cell content or default dash
+                  
+                  // Extract computed styles from the TD for separator cells
+                  const computedStyle = window.getComputedStyle(cell);
+                  const fontSize = computedStyle.fontSize;
+                  const fontFamily = computedStyle.fontFamily;
+                  const fontWeight = computedStyle.fontWeight;
+                  const fontStyle = computedStyle.fontStyle;
+                  const textDecoration = computedStyle.textDecoration;
+                  const textAlign = computedStyle.textAlign;
+                  const verticalAlign = computedStyle.verticalAlign;
+                  
+                  // Apply styles
+                  if (fontSize) {
+                    cellTextStyle += `font-size: ${fontSize} !important; `;
+                  }
+                  if (fontFamily && fontFamily !== 'inherit' && !fontFamily.includes('system-ui')) {
+                    cellTextStyle += `font-family: ${escapeFontFamily(fontFamily)} !important; `;
+                  }
+                  if (fontWeight) {
+                    cellTextStyle += `font-weight: ${fontWeight} !important; `;
+                  }
+                  if (fontStyle) {
+                    cellTextStyle += `font-style: ${fontStyle} !important; `;
+                  }
+                  if (textDecoration && !textDecoration.includes('none')) {
+                    cellTextStyle += `text-decoration: ${textDecoration} !important; `;
+                  }
+                  if (textAlign && textAlign !== 'left' && textAlign !== 'start') {
+                    cellTextStyle += `text-align: ${textAlign} !important; `;
+                  }
+                  if (verticalAlign && verticalAlign !== 'baseline') {
+                    cellTextStyle += `vertical-align: ${verticalAlign} !important; `;
+                  }
+                  
+                  // Get colors from dataset
+                  const cellFg = cell.dataset.cellFg;
+                  const cellBg = cell.dataset.cellBg;
+                  
+                  if (cellFg) {
+                    cellTextStyle += `color: ${cellFg} !important; `;
+                  }
+                  
+                  if (cellBg) {
+                    cell._pdfBgColor = cellBg;
+                  }
                 } else {
                   // Plain text cell (idx, start, end, duration, etc.) - remove all UI elements
                   const clone = cell.cloneNode(true);
@@ -4468,26 +5793,32 @@ function addHeaderResizeGrips(){
                   const fontFamily = computedStyle.fontFamily;
                   const fontWeight = computedStyle.fontWeight;
                   const fontStyle = computedStyle.fontStyle;
+                  const textDecoration = computedStyle.textDecoration;
                   const textAlign = computedStyle.textAlign;
                   
-                  // Apply styles
+                  // Apply styles - be aggressive, capture everything
                   if (fontSize) {
                     cellTextStyle += `font-size: ${fontSize} !important; `;
                   }
-                  if (fontFamily && fontFamily !== 'inherit') {
+                  if (fontFamily && fontFamily !== 'inherit' && !fontFamily.includes('system-ui')) {
                     cellTextStyle += `font-family: ${escapeFontFamily(fontFamily)} !important; `;
                   }
-                  if (fontWeight && fontWeight !== 'normal' && fontWeight !== '400') {
+                  // Capture ALL font weights (including normal, bold, etc.)
+                  if (fontWeight) {
                     cellTextStyle += `font-weight: ${fontWeight} !important; `;
                   }
-                  if (fontStyle && fontStyle !== 'normal') {
+                  // Capture ALL font styles (including normal, italic, etc.)
+                  if (fontStyle) {
                     cellTextStyle += `font-style: ${fontStyle} !important; `;
                   }
-                  if (textAlign && textAlign !== 'left') {
+                  if (textDecoration && !textDecoration.includes('none')) {
+                    cellTextStyle += `text-decoration: ${textDecoration} !important; `;
+                  }
+                  if (textAlign && textAlign !== 'left' && textAlign !== 'start') {
                     cellTextStyle += `text-align: ${textAlign} !important; `;
                   }
                   
-                  // Get colors
+                  // Get colors - NO ROW FALLBACKS
                   const cellFg = cell.dataset.cellFg;
                   const cellBg = cell.dataset.cellBg;
                   
@@ -4495,13 +5826,26 @@ function addHeaderResizeGrips(){
                     cellTextStyle += `color: ${cellFg} !important; `;
                   } else {
                     const computedFg = computedStyle.color;
-                    if (computedFg && computedFg !== 'rgba(0, 0, 0, 0)') {
+                    if (computedFg && computedFg !== 'rgba(0, 0, 0, 0)' && computedFg !== 'rgb(0, 0, 0)') {
                       cellTextStyle += `color: ${computedFg} !important; `;
                     }
                   }
                   
+                  // For plain text cells, background must go on TD, not span
+                  // Check dataset, then computed
                   if (cellBg) {
-                    cellBgStyle += `background-color: ${cellBg} !important; `;
+                    cell._pdfBgColor = cellBg;
+                  } else {
+                    // Check computed background
+                    const computedBg = computedStyle.backgroundColor;
+                    if (computedBg && 
+                        computedBg !== 'rgba(0, 0, 0, 0)' && 
+                        computedBg !== 'transparent' &&
+                        computedBg !== 'rgb(255, 255, 255)' &&
+                        computedBg !== 'rgb(15, 18, 23)' &&
+                        computedBg !== 'rgb(11, 15, 21)') {
+                      cell._pdfBgColor = computedBg;
+                    }
                   }
                 }
               }
@@ -4518,41 +5862,41 @@ function addHeaderResizeGrips(){
           let tdStyle = '';
           let spanBgStyle = '';
           
-          // Determine which background to use - cell takes precedence over row
-          if (cellBgStyle) {
-            spanBgStyle = cellBgStyle;
-          } else if (rowBgColor) {
-            spanBgStyle = `background-color: ${rowBgColor}; `;
+          // For plain text cells (start/end/idx), apply background to TD instead of span
+          const isPlainTextCell = !cell.querySelector('input, textarea, select');
+          
+          // Apply background to TD for ALL cells (plain text and input cells)
+          if (cell._pdfBgColor && isPlainTextCell) {
+            // Plain text cells: background on TD only
+            tdStyle += `background-color: ${cell._pdfBgColor} !important; `;
+          } else if (cellBgStyle) {
+            // Input cells: background on BOTH TD and span
+            tdStyle += cellBgStyle;  // Apply to TD
+            spanBgStyle = cellBgStyle;  // Also apply to span
           }
           
           // Special handling for separator columns
           if (cell.dataset.type === 'separator') {
-            // Inherit row background and text color
-            const rowBg = row.style.backgroundColor || rowBgColor || '#ffffff';
-            const rowColor = row.style.color || rowFgColor || '#000000';
             const removeBorders = cell.dataset.removeBorders === 'true';
             
-            // Inherit row formatting properties
-            let separatorStyle = `text-align: center !important; padding: 6pt 1pt !important; vertical-align: middle !important; white-space: nowrap !important; line-height: 1 !important; `;
+            // Base separator style
+            let separatorStyle = `padding: 6pt 1pt !important; white-space: nowrap !important; line-height: 1 !important; `;
             
-            // Background
-            if (rowBg) separatorStyle += `background-color: ${rowBg} !important; `;
+            // Use cell background if set (already in tdStyle from line 5816)
+            // No need to add cellBgStyle here
             
-            // Text color - inherit from row
-            if (rowColor) separatorStyle += `color: ${rowColor} !important; `;
-            
-            // Font properties - inherit from row
-            if (rowFontFamily) separatorStyle += `font-family: ${rowFontFamily} !important; `;
-            else separatorStyle += `font-family: Arial, sans-serif !important; `;
-            
-            if (rowFontSize) separatorStyle += `font-size: ${rowFontSize} !important; `;
-            else separatorStyle += `font-size: 10pt !important; `;
-            
-            if (rowBold) separatorStyle += `font-weight: bold !important; `;
-            else separatorStyle += `font-weight: normal !important; `;
-            
-            if (rowItalic) separatorStyle += `font-style: italic !important; `;
-            if (rowUnderline) separatorStyle += `text-decoration: underline !important; `;
+            // Apply cell formatting
+            if (cellTextStyle) {
+              // User has applied custom formatting - use it completely
+              separatorStyle += cellTextStyle;
+            } else {
+              // No custom formatting - use defaults
+              separatorStyle += `font-family: Arial, sans-serif !important; `;
+              separatorStyle += `font-size: 10pt !important; `;
+              separatorStyle += `font-weight: normal !important; `;
+              separatorStyle += `text-align: center !important; `;
+              separatorStyle += `vertical-align: middle !important; `;
+            }
             
             // Borders
             if (removeBorders) {
@@ -4635,16 +5979,16 @@ function addHeaderResizeGrips(){
             const sepContent = cellContent || '&mdash;';
             const removeBorders = cell.dataset.removeBorders === 'true' ? ' data-remove-borders="true"' : '';
             bodyHTML += `<td data-type="separator"${removeBorders} style="${tdStyle}">${sepContent}</td>`;
-          } else if (cellTextStyle || spanBgStyle) {
-            // Move background to span
+          } else if (cellTextStyle || spanBgStyle || (isPlainTextCell && cell._pdfBgColor)) {
+            // Has text formatting OR background (in span or TD)
             let spanStyle = cellTextStyle;
             
-            // Add background to span
-            if (spanBgStyle) {
+            // Add background to span (only if not a plain text cell with TD background)
+            if (spanBgStyle && !(isPlainTextCell && cell._pdfBgColor)) {
               spanStyle += spanBgStyle;
             }
             
-            // Make span display block to fill width, with padding for full background coverage
+            // Make span display block to fill width
             spanStyle += ' display: block; ';
             
             // If border-radius is present, add overflow hidden
@@ -4652,7 +5996,10 @@ function addHeaderResizeGrips(){
               spanStyle += ' overflow: hidden; ';
             }
             
-            // Add indent to text columns (not time columns) - REMOVED since padding is now on TD
+            // For plain text cells with no custom text formatting, use default font
+            if (!cellTextStyle && isPlainTextCell) {
+              spanStyle += ' font-size: 9pt; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; ';
+            }
             
             bodyHTML += `<td style="${tdStyle}"><span style="${spanStyle}">${cellContent}</span></td>`;
             
@@ -4780,13 +6127,15 @@ function addHeaderResizeGrips(){
       const newRow = makeRow({ id:uid(), type:'EVENT', title:'New Event', duration:30, custom:{} });
       tbody.appendChild(newRow); 
       applyColumnVisibilityToRow(newRow);
-      renumber(); recalc(); persist(); refreshAnchorSelectors(); 
+      renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
     });
     addCallBtn && addCallBtn.addEventListener('click', ()=>{ 
       const newRow = makeRow({ id:uid(), type:'CALL TIME', title:'Call Time', offset:0, anchorMode:'start', anchorId:'', custom:{} });
       tbody.appendChild(newRow); 
       applyColumnVisibilityToRow(newRow);
-      renumber(); recalc(); persist(); refreshAnchorSelectors(); 
+      renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
     });
     addSubBtn && addSubBtn.addEventListener('click', ()=>{
       const header=makeRow({ id:uid(), type:'SUB', title:'Sub-schedule', offset:0, anchorMode:'eventEnd', anchorId:'', subColor:'', custom:{}, children:[{id:uid(), title:'Sub Event', duration:30, custom:{}}] });
@@ -4798,6 +6147,7 @@ function addHeaderResizeGrips(){
         delete header._pendingChildren; 
       }
       renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
     });
 
     // === Floating Action Button ===
@@ -4831,6 +6181,7 @@ function addHeaderResizeGrips(){
       tbody.appendChild(newRow);
       applyColumnVisibilityToRow(newRow);
       renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
       fabOpen = false;
       fab.classList.remove('active');
       fabMenu.classList.remove('active');
@@ -4841,6 +6192,7 @@ function addHeaderResizeGrips(){
       tbody.appendChild(newRow);
       applyColumnVisibilityToRow(newRow);
       renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
       fabOpen = false;
       fab.classList.remove('active');
       fabMenu.classList.remove('active');
@@ -4856,6 +6208,7 @@ function addHeaderResizeGrips(){
         delete header._pendingChildren; 
       }
       renumber(); recalc(); persist(); refreshAnchorSelectors();
+      addRowResizeGrips();
       fabOpen = false;
       fab.classList.remove('active');
       fabMenu.classList.remove('active');
@@ -4903,7 +6256,7 @@ function addHeaderResizeGrips(){
         dayNumber: 1,
         date: '',
         dow: '',
-        scheduleStart: '08:00',
+        scheduleStart: '8:00',
         rows,
         palette: getPalette(),
         cols: getCols()
@@ -5127,10 +6480,140 @@ function addHeaderResizeGrips(){
         saveDayData();
       });
       
+      // Normalize and validate schedule start input
+      scheduleStart && scheduleStart.addEventListener('input', (e) => {
+        const format = getTimeFormat();
+        
+        if (format === '12h') {
+          // Allow numbers, colon, space, A, P, M
+          let value = e.target.value.replace(/[^0-9: APMapm]/g, '');
+          
+          // Auto-add colon after 1-2 digits if user types numbers continuously
+          if (value.length === 3 && !value.includes(':') && !value.includes(' ')) {
+            value = value.slice(0, 2) + ':' + value.slice(2);
+          }
+          
+          e.target.value = value;
+        } else {
+          // 24h mode: only numbers and colon
+          let value = e.target.value.replace(/[^0-9:]/g, '');
+          
+          // Auto-add colon after 1-2 digits
+          if (value.length === 3 && !value.includes(':')) {
+            value = value.slice(0, 2) + ':' + value.slice(2);
+          }
+          
+          e.target.value = value;
+        }
+      });
+      
+      // Validate on blur to ensure proper format
+      scheduleStart && scheduleStart.addEventListener('blur', (e) => {
+        const format = getTimeFormat();
+        let value = e.target.value.trim();
+        
+        if (!value) {
+          e.target.value = format === '12h' ? '8:00 AM' : '8:00';
+          return;
+        }
+        
+        // Parse the time
+        let h, m, isPM = false;
+        
+        if (format === '12h') {
+          // Handle 12h format with AM/PM
+          const ampmMatch = value.match(/([0-9]{1,2}):([0-9]{2})\s*(AM|PM)?/i);
+          if (!ampmMatch) {
+            e.target.value = '8:00 AM';
+            return;
+          }
+          
+          h = parseInt(ampmMatch[1], 10);
+          m = parseInt(ampmMatch[2], 10);
+          isPM = ampmMatch[3] && ampmMatch[3].toUpperCase() === 'PM';
+          
+          // Validate 12h hour (1-12)
+          if (isNaN(h) || h < 1 || h > 12) h = 8;
+          
+          // Validate minute (0-59)
+          if (isNaN(m) || m < 0 || m > 59) m = 0;
+          
+          // Default to AM if not specified
+          const period = isPM ? 'PM' : 'AM';
+          e.target.value = `${h}:${String(m).padStart(2, '0')} ${period}`;
+        } else {
+          // Handle 24h format
+          const parts = value.split(':');
+          if (parts.length !== 2) {
+            e.target.value = '8:00';
+            return;
+          }
+          
+          h = parseInt(parts[0], 10);
+          m = parseInt(parts[1], 10);
+          
+          // Validate hour (0-23)
+          if (isNaN(h) || h < 0 || h > 23) h = 8;
+          
+          // Validate minute (0-59)
+          if (isNaN(m) || m < 0 || m > 59) m = 0;
+          
+          // Format without leading zero for single-digit hours
+          e.target.value = `${h}:${String(m).padStart(2, '0')}`;
+        }
+      });
+      
       // Setup schedule change listener
       scheduleStart && scheduleStart.addEventListener('change', () => {
         saveDayData();
+        recalc();
       });
+      
+      // Add Enter key handler for immediate application
+      scheduleStart && scheduleStart.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          scheduleStart.blur(); // This will trigger the change event
+          saveDayData();
+          recalc();
+        }
+      });
+      
+      // Time format toggle button
+      const timeFormatToggle = document.getElementById('timeFormatToggle');
+      if (timeFormatToggle) {
+        // Set initial state
+        const currentFormat = getTimeFormat();
+        timeFormatToggle.textContent = currentFormat === '12h' ? '12h' : '24h';
+        
+        timeFormatToggle.addEventListener('click', () => {
+          const currentFormat = getTimeFormat();
+          const newFormat = currentFormat === '12h' ? '24h' : '12h';
+          setTimeFormat(newFormat);
+          timeFormatToggle.textContent = newFormat === '12h' ? '12h' : '24h';
+          
+          // Convert scheduleStart input to new format
+          if (scheduleStart) {
+            const currentValue = scheduleStart.value;
+            const minutes = toMinutes(currentValue);
+            const hhmm = minutesToHHMM(minutes);
+            
+            if (newFormat === '12h') {
+              scheduleStart.value = hhmmToAmPm(hhmm);
+              scheduleStart.placeholder = '8:00 AM';
+              scheduleStart.maxLength = 8;
+            } else {
+              const [h, m] = hhmm.split(':').map(Number);
+              scheduleStart.value = `${h}:${String(m).padStart(2, '0')}`;
+              scheduleStart.placeholder = '8:00';
+              scheduleStart.maxLength = 5;
+            }
+          }
+          
+          // Recalculate to update all times in schedule
+          recalc();
+        });
+      }
     }
 
     rebuildUI();
@@ -5328,7 +6811,7 @@ window.getCurrentDay = function() {
     dayNumber: 1,
     date: s.meta?.date || '',
     dow: s.meta?.dow || '',
-    scheduleStart: s.start || '08:00',
+    scheduleStart: s.start || '8:00',
     rows: s.rows || [],
     palette: s.palette || DEFAULT_PALETTE.slice(),
     cols: s.cols || DEFAULT_CUSTOM_COLS.slice()
@@ -5385,7 +6868,7 @@ window.getDays = function() {
     dayNumber: 1,
     date: s.meta?.date || '',
     dow: s.meta?.dow || '',
-    scheduleStart: s.start || '08:00',
+    scheduleStart: s.start || '8:00',
     rows: s.rows || [],
     palette: s.palette || DEFAULT_PALETTE.slice(),
     cols: s.cols || DEFAULT_CUSTOM_COLS.slice()
@@ -6527,7 +8010,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Create tooltip element
   const tooltip = document.createElement('div');
   tooltip.className = 'drag-column-tooltip';
-  tooltip.textContent = 'CLICK TO SELECT ROW\nSHIFT OR ⌘+CLICK FOR MULTIPLE';
+  tooltip.textContent = 'CLICK TO SELECT ALL ROWS';
   document.body.appendChild(tooltip);
   
   // Find the drag column header
@@ -6535,13 +8018,46 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!dragHeader) return;
   
   // Click to select all rows
-  dragHeader.addEventListener('click', () => {
-    const allRows = document.querySelectorAll('tbody tr[data-id]');
+  dragHeader.addEventListener('click', (e) => {
+    console.log('[Select All] Drag header clicked');
+    e.stopPropagation(); // Prevent global click handler from clearing selection
+    
+    const tbody = document.getElementById('tbody');
+    if (!tbody) {
+      console.error('[Select All] tbody not found');
+      return;
+    }
+    
+    const allRows = tbody.querySelectorAll('tr[data-id]');
+    console.log('[Select All] Found', allRows.length, 'rows');
+    
+    // Clear existing selection
+    SelectionManager.clear();
+    
+    // Select all cells in all rows
     allRows.forEach(tr => {
-      if (!tr.classList.contains('selected')) {
-        tr.classList.add('selected');
-      }
+      const cells = tr.querySelectorAll('td:not([data-key="drag"]):not([data-key="actions"])');
+      cells.forEach(cell => {
+        SelectionManager.selectedCells.add(cell);
+        cell.classList.add('cell-selected');
+      });
     });
+    
+    SelectionManager.selectionType = 'all';
+    SelectionManager.lastSelectedCell = SelectionManager.selectedCells.values().next().value;
+    
+    console.log('[Select All] Selected', SelectionManager.selectedCells.size, 'cells');
+    console.log('[Select All] Selection type:', SelectionManager.selectionType);
+    console.log('[Select All] First cell:', SelectionManager.lastSelectedCell);
+    
+    // Also update old system for backward compatibility
+    if (window.selectedRows) {
+      window.selectedRows.clear();
+      allRows.forEach(tr => {
+        tr.classList.add('selected');
+        window.selectedRows.add(tr);
+      });
+    }
   });
   
   dragHeader.addEventListener('mouseenter', () => {
