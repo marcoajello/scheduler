@@ -1315,26 +1315,22 @@ const AlertDashboard = (function() {
   
   function open() {
     console.log('[DASHBOARD DEBUG] Opening dashboard');
-    console.log('[DASHBOARD DEBUG] dashboardElement:', dashboardElement);
     dashboardElement.classList.add('open');
-    console.log('[DASHBOARD DEBUG] Classes:', dashboardElement.className);
-    console.log('[DASHBOARD DEBUG] Computed transform:', window.getComputedStyle(dashboardElement).transform);
-    console.log('[DASHBOARD DEBUG] Computed opacity:', window.getComputedStyle(dashboardElement).opacity);
     isOpen = true;
     
-    // Initialize tach visibility 1 second after dashboard opens
+    // After dashboard animation completes, make tach available (but still parked)
     setTimeout(() => {
       const tach = document.getElementById('production-tach');
-      if (tach && !tach.classList.contains('initialized')) {
+      if (tach) {
         tach.classList.add('initialized');
         
-        // If tach was previously visible (toggle button is active), restore it
+        // If tach toggle was active, show it
         const toggleBtn = document.getElementById('alert-tach-toggle');
         if (toggleBtn && toggleBtn.classList.contains('active')) {
           tach.classList.add('visible');
         }
       }
-    }, 1000);
+    }, 1100);
     
     runValidation();
   }
@@ -1342,20 +1338,23 @@ const AlertDashboard = (function() {
   function close() {
     console.log('[DASHBOARD DEBUG] Closing dashboard');
     
-    // Hide tach completely before dashboard closes
     const tach = document.getElementById('production-tach');
-    if (tach && (tach.classList.contains('visible') || tach.classList.contains('initialized'))) {
-      // First slide it down if it's up
+    
+    if (tach && tach.classList.contains('visible')) {
+      // Tach is up - slide it down first
       tach.classList.remove('visible');
-      // Wait for slide animation, then vanish, then close dashboard
+      
+      // Wait for slide animation, then hide and close dashboard
       setTimeout(() => {
         tach.classList.remove('initialized');
-        // Now close the dashboard after tach is gone
         dashboardElement.classList.remove('open');
         isOpen = false;
-      }, 500); // After slide animation completes
+      }, 500);
     } else {
-      // Tach already hidden, close immediately
+      // Tach is parked or doesn't exist - just hide and close
+      if (tach) {
+        tach.classList.remove('initialized');
+      }
       dashboardElement.classList.remove('open');
       isOpen = false;
     }
