@@ -11223,8 +11223,8 @@ function addRowResizeGrips(){
         'Add New Day',
         'How would you like to create the new day?',
         [
-          { label: 'Duplicate Current', value: 'duplicate' },
-          { label: 'Start Blank', value: 'blank' },
+          { label: 'Duplicate', value: 'duplicate' },
+          { label: 'New', value: 'blank' },
           { label: 'Cancel', value: 'cancel' }
         ]
       );
@@ -12934,7 +12934,7 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
         'New Schedule',
         'What would you like to do with the current schedule?',
         [
-          { label: 'Save First', value: 'save' },
+          { label: 'Save', value: 'save' },
           { label: "Don't Save", value: 'discard' },
           { label: 'Cancel', value: 'cancel' }
         ]
@@ -13029,7 +13029,7 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
           'Open Sample Schedule',
           'What would you like to do with the current schedule?',
           [
-            { label: 'Save First', value: 'save' },
+            { label: 'Save', value: 'save' },
             { label: "Don't Save", value: 'discard' },
             { label: 'Cancel', value: 'cancel' }
           ]
@@ -13251,47 +13251,43 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
   // CLOSE - Clear current file
   const fileClose = document.getElementById('fileClose');
   if (fileClose) {
-    fileClose.addEventListener('click', () => {
+    fileClose.addEventListener('click', async () => {
       const currentFile = localStorage.getItem('currentCloudFile');
+      const provider = localStorage.getItem('currentCloudProvider') || 'local';
       
-      if (!currentFile) {
-        // No current file - prompt to save first
-        if (confirm('Save current schedule before closing?')) {
+      const choice = await showThreeOptionDialog(
+        'Close Schedule',
+        'What would you like to do with the current schedule?',
+        [
+          { label: 'Save', value: 'save' },
+          { label: "Don't Save", value: 'discard' },
+          { label: 'Cancel', value: 'cancel' }
+        ]
+      );
+      
+      if (choice === 'cancel') return;
+      
+      if (choice === 'save') {
+        if (currentFile) {
+          // Save to existing cloud file
+          const state = readState();
+          if (provider === 'supabase' && window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+            await window.SupabaseAPI.files.saveScheduleFile(currentFile, state);
+          } else if (provider === 'dropbox' && typeof window.saveToDropbox === 'function') {
+            window.saveToDropbox(state);
+          }
+        } else {
+          // No cloud file - trigger Save As
           const fileSaveAs = document.getElementById('fileSaveAs');
           if (fileSaveAs) {
             fileSaveAs.click();
-            // User will need to click CLOSE again after saving
             alert('Please click CLOSE again after saving.');
-          }
-          return;
-        }
-      } else {
-        if (!confirm('Close current schedule? Schedule will be saved first.')) {
-          return;
-        }
-      }
-      
-      // Autosave current schedule first if we have a cloud file
-      const provider = localStorage.getItem('currentCloudProvider') || 'local';
-      
-      if (currentFile) {
-        const state = readState();
-        
-        if (provider === 'supabase') {
-          if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
-            window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
-              clearAndReload();
-            });
             return;
           }
-        } else if (provider === 'dropbox') {
-          if (typeof window.saveToDropbox === 'function') {
-            window.saveToDropbox(state);
-          }
         }
       }
       
-      // If no cloud file or local mode, just clear immediately
+      // Clear and reload with template
       clearAndReload();
       
       function clearAndReload() {
