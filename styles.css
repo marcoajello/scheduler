@@ -1640,6 +1640,17 @@ tbody td:has(.tagsBox) {
   box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3);
 }
 
+.type-badge.milestone-badge {
+  background: #805ad5;
+  color: white;
+}
+
+.type-badge.milestone-badge:hover {
+  background: #6b46c1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(128, 90, 213, 0.3);
+}
+
 /* Sub-schedule child badges (smaller) */
 .sub-event-badge, .sub-call-badge {
   font-size: 9px;
