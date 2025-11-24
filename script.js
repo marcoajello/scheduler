@@ -12926,16 +12926,37 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
       // Handle button clicks
       document.getElementById('openSample').addEventListener('click', () => {
         document.body.removeChild(modal);
-        const resetBtn = document.getElementById('resetBtn');
-        if (resetBtn) {
-          resetBtn.click();
-        } else {
-          // Fallback if resetBtn doesn't exist
-          if (confirm('Load sample schedule? Any unsaved changes will be lost.')) {
-            localStorage.removeItem('currentCloudFile');
-            localStorage.removeItem('currentCloudProvider');
-            location.reload();
-          }
+        if (confirm('Load sample schedule? Any unsaved changes will be lost.')) {
+          // Fetch directly from default_schedule.json
+          fetch('default_schedule.json')
+            .then(response => response.json())
+            .then(template => {
+              // Generate fresh IDs
+              const freshDayId = 'day-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+              if (template.days && template.days[0]) {
+                template.days[0].id = freshDayId;
+                if (template.days[0].rows) {
+                  template.days[0].rows.forEach(row => {
+                    row.id = 'r_' + Math.random().toString(36).substr(2, 10);
+                  });
+                }
+              }
+              template.activeDayId = freshDayId;
+              
+              // Save and reload
+              localStorage.removeItem('currentCloudFile');
+              localStorage.removeItem('currentCloudProvider');
+              localStorage.setItem('shootScheduler_v8_10', JSON.stringify(template));
+              try {
+                localStorage.removeItem('shootScheduler_v8_10_UNDO');
+                localStorage.removeItem('shootScheduler_v8_10_REDO');
+              } catch(_) { }
+              location.reload();
+            })
+            .catch(err => {
+              console.error('Failed to load sample schedule:', err);
+              alert('Could not load sample schedule');
+            });
         }
       });
       
