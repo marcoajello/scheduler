@@ -1511,38 +1511,61 @@ const AlertDashboard = (function() {
   }
   
   /**
-   * Calculate logarithmic position for tach needle
-   * Range: -120 to +120 minutes (-2hrs to +2hrs)
-   * Logarithmic scale makes small differences more visible
+   * Calculate needle angle for tach based on minutes delta
+   * The gauge is non-linear with these visual anchor points:
+   * - 0 min = 0° (top)
+   * - 5 min = ~18° 
+   * - 15 min = ~45°
+   * - 30 min = ~60°
+   * - 60 min = ~75°
+   * - 90 min = ~90° (horizontal)
+   * - 120 min = ~105°
+   * - 180 min = ~120°
+   * - 240 min = ~135° (bottom of visible arc)
+   * Negative values mirror to the left
    */
   function calculateTachPosition(minutes) {
-    // Clamp to range
-    const clamped = Math.max(-120, Math.min(120, minutes));
+    // Clamp to gauge range
+    const clamped = Math.max(-240, Math.min(240, minutes));
     
-    // Final adjusted scale - 5 min = 25%
     const sign = clamped >= 0 ? 1 : -1;
     const abs = Math.abs(clamped);
     
-    // Progressive distribution across the gauge
-    let logValue;
+    // Piecewise linear interpolation matching the gauge markings
+    let angle;
     if (abs <= 5) {
-      // 0-5 min: takes 25% of gauge
-      logValue = (abs / 5) * 0.25;
+      // 0-5 min: 0° to 18°
+      angle = (abs / 5) * 18;
+    } else if (abs <= 10) {
+      // 5-10 min: 18° to 30°
+      angle = 18 + ((abs - 5) / 5) * 12;
     } else if (abs <= 15) {
-      // 5-15 min: takes 20% of gauge
-      logValue = 0.25 + ((abs - 5) / 10) * 0.20;
+      // 10-15 min: 30° to 45°
+      angle = 30 + ((abs - 10) / 5) * 15;
+    } else if (abs <= 30) {
+      // 15-30 min: 45° to 60°
+      angle = 45 + ((abs - 15) / 15) * 15;
+    } else if (abs <= 45) {
+      // 30-45 min: 60° to 68°
+      angle = 60 + ((abs - 30) / 15) * 8;
     } else if (abs <= 60) {
-      // 15-60 min: takes 30% of gauge
-      logValue = 0.45 + ((abs - 15) / 45) * 0.30;
+      // 45-60 min: 68° to 75°
+      angle = 68 + ((abs - 45) / 15) * 7;
+    } else if (abs <= 90) {
+      // 60-90 min: 75° to 90°
+      angle = 75 + ((abs - 60) / 30) * 15;
+    } else if (abs <= 120) {
+      // 90-120 min: 90° to 105°
+      angle = 90 + ((abs - 90) / 30) * 15;
+    } else if (abs <= 180) {
+      // 120-180 min: 105° to 120°
+      angle = 105 + ((abs - 120) / 60) * 15;
     } else {
-      // 60-120 min: takes 25% of gauge
-      logValue = 0.75 + ((abs - 60) / 60) * 0.25;
+      // 180-240 min: 120° to 135°
+      angle = 120 + ((abs - 180) / 60) * 15;
     }
     
-    // Convert to rotation angle (-90 to +90 degrees)
-    const angle = sign * logValue * 90;
-    
-    return angle;
+    return sign * angle;
   }
   
   /**
@@ -1837,6 +1860,14 @@ const AlertDashboard = (function() {
       }, 0);
     }
   }
+  
+  // Update tach position on window resize
+  window.addEventListener('resize', () => {
+    const tach = document.getElementById('production-tach');
+    if (tach && tach.classList.contains('visible')) {
+      updateTachPosition();
+    }
+  });
   
   function renderViolationList(violations, listEl, isHidden) {
     listEl.innerHTML = '';
