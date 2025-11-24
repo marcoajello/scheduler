@@ -5693,9 +5693,10 @@ function addRowResizeGrips(){
         } else if(col.type==='separator'){
           // Separator column - show the configured character
           td.dataset.type = 'separator';
-          // Hide separator for CALL TIME and SUB-SCHEDULE rows
+          // Hide separator for CALL TIME, SUB-SCHEDULE, and milestone rows
           const rowType = tr.dataset.type;
-          if (rowType === 'CALL TIME' || rowType === 'SUB') {
+          const isMilestone = tr.dataset.isMilestone === 'true';
+          if (rowType === 'CALL TIME' || rowType === 'SUB' || isMilestone) {
             td.textContent = '';
           } else {
             td.textContent = col.separatorChar || '—';
@@ -6308,6 +6309,12 @@ function addRowResizeGrips(){
       tr.dataset.anchorId=rowData.anchorId||'';
       tr.dataset.callTimeDisplay=rowData.callTimeDisplay||'end';
       tr.dataset.mealWrapType=rowData.mealWrapType||'';
+      
+      // Check if this is a milestone event (Camera Wrap or Tail-lights)
+      const mealWrapLower = (rowData.mealWrapType || '').toLowerCase();
+      const isMilestone = mealWrapLower === 'camera wrap' || mealWrapLower === 'tail-lights';
+      tr.dataset.isMilestone = isMilestone ? 'true' : '';
+      
       // restore colors
       if(rowData.rowBg){ 
         tr.dataset.rowBg=rowData.rowBg; 
@@ -6377,14 +6384,15 @@ function addRowResizeGrips(){
         if (idxFormatting.valign) cells.idx.style.setProperty('vertical-align', idxFormatting.valign, 'important');
       }
       
-      // For SUB-SCHEDULE and CALL TIME, leave start cell blank instead of dash
+      // For SUB-SCHEDULE, CALL TIME, and milestone events, leave start cell blank instead of dash
       cells.start=td('start'); cells.start.className='start ampm'; 
-      if(tr.dataset.type==='EVENT') {
+      if(tr.dataset.type==='EVENT' && tr.dataset.isMilestone !== 'true') {
         cells.start.textContent='—';
       } else if(tr.dataset.type==='SEPARATOR') {
         cells.start.textContent='';
         cells.start.classList.add('separator-cell');
       }
+      // CALL TIME, SUB, and milestones get blank start (time shown in end cell)
       
       // Apply formatting if it exists
       const startFormatting = rowData.cellFormatting ? rowData.cellFormatting['start'] : null;
@@ -6409,7 +6417,7 @@ function addRowResizeGrips(){
       }
       
       cells.duration=td('duration');
-      if(tr.dataset.type==='SUB'||tr.dataset.type==='CALL TIME'){
+      if(tr.dataset.type==='SUB'||tr.dataset.type==='CALL TIME'||tr.dataset.isMilestone==='true'){
         cells.duration.innerHTML=`<input class="offset" type="number" step="5" min="-10080" max="10080" value="${Number(rowData.offset||0)||0}">`;
         const offsetInput = cells.duration.querySelector('.offset');
         offsetInput.addEventListener('input', ()=>{ recalc(); persist(); });
@@ -6471,6 +6479,65 @@ function addRowResizeGrips(){
           </div>
         `;
         cells.type.classList.add('separator-cell');
+      }
+      else if(tr.dataset.isMilestone === 'true'){
+        // MILESTONE (Camera Wrap, Tail-lights): just shows the designation, click to change
+        const designation = rowData.mealWrapType || '';
+        const badgeText = designation.toUpperCase();
+        cells.type.innerHTML=`
+          <div class="type-cell-wrapper">
+            <button class="type-badge milestone-badge">${badgeText}</button>
+          </div>
+        `;
+        
+        const badge = cells.type.querySelector('.type-badge');
+        // Click opens designation menu to change or clear
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          
+          const existingMenu = document.querySelector('.meal-wrap-menu');
+          if (existingMenu) existingMenu.remove();
+          
+          const menu = document.createElement('div');
+          menu.className = 'popover meal-wrap-menu is-open';
+          menu.innerHTML = `
+            <div style="padding: 6px;">
+              <div style="font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; color: var(--muted);">Change Designation</div>
+              <button class="meal-wrap-option" data-type="1st meal">1st Meal</button>
+              <button class="meal-wrap-option" data-type="2nd meal">2nd Meal</button>
+              <button class="meal-wrap-option" data-type="camera wrap">Camera Wrap</button>
+              <button class="meal-wrap-option" data-type="tail-lights">Tail-Lights</button>
+              <button class="meal-wrap-option meal-wrap-clear" data-type="">Clear (Back to Event)</button>
+            </div>
+          `;
+          
+          const rect = badge.getBoundingClientRect();
+          menu.style.left = rect.left + 'px';
+          menu.style.top = (rect.bottom + 4) + 'px';
+          
+          document.body.appendChild(menu);
+          
+          menu.querySelectorAll('.meal-wrap-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+              const type = opt.dataset.type;
+              rowData.mealWrapType = type;
+              tr.dataset.mealWrapType = type;
+              persist();
+              loadDay(getActiveDayId());
+              menu.remove();
+            });
+          });
+          
+          setTimeout(() => {
+            const closeMenu = (e) => {
+              if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+              }
+            };
+            document.addEventListener('click', closeMenu);
+          }, 0);
+        });
       }
       else {
         // EVENT: badge button opens meal/wrap designation menu
@@ -6802,9 +6869,10 @@ function addRowResizeGrips(){
               
               if(c.type==='separator'){
                 td.dataset.type = 'separator';
-                // Hide separator for CALL TIME and SUB-SCHEDULE rows
+                // Hide separator for CALL TIME, SUB-SCHEDULE, and milestone rows
                 const rowType = tr.dataset.type;
-                if (rowType === 'CALL TIME' || rowType === 'SUB') {
+                const isMilestone = tr.dataset.isMilestone === 'true';
+                if (rowType === 'CALL TIME' || rowType === 'SUB' || isMilestone) {
                   td.textContent = '';
                 } else {
                   td.textContent = c.separatorChar || '—';
@@ -7598,7 +7666,15 @@ function addRowResizeGrips(){
     // Timeline
     function buildEventTimeline(){
       const rows=qsa('tbody tr'); const timeline={}; const base=toMinutes(readState().start || scheduleStart?.value || '8:00'); let cursor=base;
-      rows.forEach(tr=>{ if(tr.dataset.type==='EVENT' && !tr.classList.contains('subchild')){ const dur=Number(tr.querySelector('.duration')?.value)||0; const id=tr.dataset.id; timeline[id]={start:cursor,end:cursor+dur,title:tr.querySelector('.title')?.value||'Untitled'}; cursor+=dur; } });
+      rows.forEach(tr=>{ 
+        // Only include regular EVENTs (not milestones) in timeline
+        if(tr.dataset.type==='EVENT' && !tr.classList.contains('subchild') && tr.dataset.isMilestone !== 'true'){ 
+          const dur=Number(tr.querySelector('.duration')?.value)||0; 
+          const id=tr.dataset.id; 
+          timeline[id]={start:cursor,end:cursor+dur,title:tr.querySelector('.title')?.value||'Untitled'}; 
+          cursor+=dur; 
+        } 
+      });
       return {timeline, base};
     }
     function reapplyCellFormatting(td) {
@@ -7675,11 +7751,51 @@ function addRowResizeGrips(){
       const {timeline, base}=buildEventTimeline();
       qsa('tbody tr').forEach(tr=>{
         const s=tr.querySelector('td[data-key="start"]'), e=tr.querySelector('td[data-key="end"]'); if(!s||!e) return;
-        if(tr.dataset.type==='EVENT'){ 
+        if(tr.dataset.type==='EVENT' && tr.dataset.isMilestone !== 'true'){ 
           const t=timeline[tr.dataset.id]; 
           s.textContent=formatTime(minutesToHHMM(t.start)); 
           e.textContent=formatTime(minutesToHHMM(t.end)); 
           // Reapply cell formatting from dataset
+          reapplyCellFormatting(s);
+          reapplyCellFormatting(e);
+        }
+        else if(tr.dataset.isMilestone === 'true'){
+          // Milestone events (Camera Wrap, Tail-lights) pass-through from row above
+          // Find the previous row and grab its end time (or start if no end)
+          const prevRow = tr.previousElementSibling;
+          const offset = Number(tr.querySelector('.offset')?.value) || 0;
+          let timeText = '--:--';
+          
+          if (prevRow) {
+            const prevEnd = prevRow.querySelector('td[data-key="end"]');
+            const prevStart = prevRow.querySelector('td[data-key="start"]');
+            const prevEndText = prevEnd?.textContent?.trim();
+            const prevStartText = prevStart?.textContent?.trim();
+            
+            // Use end time if available and not empty/dash, otherwise start time
+            let baseTime = null;
+            if (prevEndText && prevEndText !== '' && prevEndText !== '—') {
+              baseTime = prevEndText;
+            } else if (prevStartText && prevStartText !== '' && prevStartText !== '—') {
+              baseTime = prevStartText;
+            }
+            
+            if (baseTime) {
+              // Apply offset if any
+              if (offset !== 0) {
+                const baseMinutes = toMinutes(baseTime);
+                timeText = formatTime(minutesToHHMM(baseMinutes + offset));
+              } else {
+                timeText = baseTime;
+              }
+            }
+          }
+          
+          // Show time in end cell only, start cell empty
+          s.textContent = '';
+          e.textContent = timeText;
+          hideAdjacentSeparators(tr, 'end');
+          
           reapplyCellFormatting(s);
           reapplyCellFormatting(e);
         }
