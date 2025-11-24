@@ -298,6 +298,83 @@ document.addEventListener("DOMContentLoaded", updateHeaderDisplay);
   };
   // Remove duplicate error handler - using global one instead
 
+  // === 3-Option Dialog Helper ===
+  function showThreeOptionDialog(title, message, options) {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        display: flex;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 10000000;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: var(--panel, #fff);
+        color: var(--text, #111827);
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      `;
+      
+      const buttonsHtml = options.map((opt, i) => {
+        const isPrimary = i === 0;
+        const isCancel = opt.value === 'cancel';
+        const style = isCancel 
+          ? 'background: var(--panel, white); color: var(--text, #1f2937); border: 1px solid var(--border, #d1d5db);'
+          : isPrimary 
+            ? 'background: #2563eb; color: white; border: none;'
+            : 'background: var(--muted, #6b7280); color: white; border: none;';
+        return `<button data-value="${opt.value}" style="padding: 10px 16px; ${style} border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px;">${opt.label}</button>`;
+      }).join('');
+      
+      content.innerHTML = `
+        <h3 style="margin-top: 0; margin-bottom: 8px;">${title}</h3>
+        <p style="font-size: 13px; color: var(--muted, #6b7280); margin-bottom: 20px;">${message}</p>
+        <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+          ${buttonsHtml}
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      content.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.body.removeChild(modal);
+          resolve(btn.dataset.value);
+        });
+      });
+      
+      // Close on background click = cancel
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          document.body.removeChild(modal);
+          resolve('cancel');
+        }
+      });
+      
+      // ESC key = cancel
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          document.body.removeChild(modal);
+          document.removeEventListener('keydown', escHandler);
+          resolve('cancel');
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+    });
+  }
+  
+  // Expose globally
+  window.showThreeOptionDialog = showThreeOptionDialog;
+
   try{
     const qs=s=>document.querySelector(s), qsa=s=>Array.from(document.querySelectorAll(s));
     const tbody=qs('#tbody'), theadRow=qs('#headerRow');
@@ -11137,14 +11214,25 @@ function addRowResizeGrips(){
     
     // Add Day button
     const fabAddDay = document.getElementById('fabAddDay');
-    fabAddDay && fabAddDay.addEventListener('click', () => {
+    fabAddDay && fabAddDay.addEventListener('click', async () => {
       fabOpen = false;
       fab.classList.remove('active');
       fabMenu.classList.remove('active');
       
-      const choice = confirm('Would you like to duplicate the current day\'s schedule?\n\nOK = Duplicate schedule\nCancel = Start with blank day (one event)');
+      const choice = await showThreeOptionDialog(
+        'Add New Day',
+        'How would you like to create the new day?',
+        [
+          { label: 'Duplicate Current', value: 'duplicate' },
+          { label: 'Start Blank', value: 'blank' },
+          { label: 'Cancel', value: 'cancel' }
+        ]
+      );
+      
+      if (choice === 'cancel') return;
+      
       saveDayData(); // Save current day first
-      addNewDay(choice);
+      addNewDay(choice === 'duplicate');
     });
 
     resetBtn && resetBtn.addEventListener('click', ()=>{ 
@@ -12838,47 +12926,43 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
   // NEW - Create new schedule
   const fileNew = document.getElementById('fileNew');
   if (fileNew) {
-    fileNew.addEventListener('click', () => {
+    fileNew.addEventListener('click', async () => {
       const currentFile = localStorage.getItem('currentCloudFile');
+      const provider = localStorage.getItem('currentCloudProvider') || 'local';
       
-      if (!currentFile) {
-        // No current file - prompt to save first
-        if (confirm('Save current schedule before creating new one?')) {
+      const choice = await showThreeOptionDialog(
+        'New Schedule',
+        'What would you like to do with the current schedule?',
+        [
+          { label: 'Save First', value: 'save' },
+          { label: "Don't Save", value: 'discard' },
+          { label: 'Cancel', value: 'cancel' }
+        ]
+      );
+      
+      if (choice === 'cancel') return;
+      
+      if (choice === 'save') {
+        if (currentFile) {
+          // Save to existing cloud file
+          const state = readState();
+          if (provider === 'supabase' && window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
+            await window.SupabaseAPI.files.saveScheduleFile(currentFile, state);
+          } else if (provider === 'dropbox' && typeof window.saveToDropbox === 'function') {
+            window.saveToDropbox(state);
+          }
+        } else {
+          // No cloud file - trigger Save As
           const fileSaveAs = document.getElementById('fileSaveAs');
           if (fileSaveAs) {
             fileSaveAs.click();
-            // User will need to click NEW again after saving
             alert('Please click NEW again after saving.');
-          }
-          return;
-        }
-      } else {
-        if (!confirm('Create new blank schedule? Current schedule will be saved first.')) {
-          return;
-        }
-      }
-      
-      // Autosave current schedule first if we have a cloud file
-      const provider = localStorage.getItem('currentCloudProvider') || 'local';
-      
-      if (currentFile) {
-        const state = readState();
-        
-        if (provider === 'supabase') {
-          if (window.SupabaseAPI && window.SupabaseAPI.auth.isAuthenticated()) {
-            window.SupabaseAPI.files.saveScheduleFile(currentFile, state).then(() => {
-              clearAndReload();
-            });
             return;
           }
-        } else if (provider === 'dropbox') {
-          if (typeof window.saveToDropbox === 'function') {
-            window.saveToDropbox(state);
-          }
         }
       }
       
-      // If no cloud file or local mode, just clear immediately
+      // Clear and reload with template
       clearAndReload();
       
       function clearAndReload() {
@@ -12938,40 +13022,60 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
       document.body.appendChild(modal);
       
       // Handle button clicks
-      document.getElementById('openSample').addEventListener('click', () => {
+      document.getElementById('openSample').addEventListener('click', async () => {
         document.body.removeChild(modal);
-        if (confirm('Load sample schedule? Any unsaved changes will be lost.')) {
-          // Fetch directly from default_schedule.json
-          fetch('default_schedule.json')
-            .then(response => response.json())
-            .then(template => {
-              // Generate fresh IDs
-              const freshDayId = 'day-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-              if (template.days && template.days[0]) {
-                template.days[0].id = freshDayId;
-                if (template.days[0].rows) {
-                  template.days[0].rows.forEach(row => {
-                    row.id = 'r_' + Math.random().toString(36).substr(2, 10);
-                  });
-                }
-              }
-              template.activeDayId = freshDayId;
-              
-              // Save and reload
-              localStorage.removeItem('currentCloudFile');
-              localStorage.removeItem('currentCloudProvider');
-              localStorage.setItem('shootScheduler_v8_10', JSON.stringify(template));
-              try {
-                localStorage.removeItem('shootScheduler_v8_10_UNDO');
-                localStorage.removeItem('shootScheduler_v8_10_REDO');
-              } catch(_) { }
-              location.reload();
-            })
-            .catch(err => {
-              console.error('Failed to load sample schedule:', err);
-              alert('Could not load sample schedule');
-            });
+        
+        const choice = await showThreeOptionDialog(
+          'Open Sample Schedule',
+          'What would you like to do with the current schedule?',
+          [
+            { label: 'Save First', value: 'save' },
+            { label: "Don't Save", value: 'discard' },
+            { label: 'Cancel', value: 'cancel' }
+          ]
+        );
+        
+        if (choice === 'cancel') return;
+        
+        if (choice === 'save') {
+          const fileSaveAs = document.getElementById('fileSaveAs');
+          if (fileSaveAs) {
+            fileSaveAs.click();
+            alert('Please try again after saving.');
+            return;
+          }
         }
+        
+        // Fetch directly from default_schedule.json
+        fetch('default_schedule.json')
+          .then(response => response.json())
+          .then(template => {
+            // Generate fresh IDs
+            const freshDayId = 'day-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            if (template.days && template.days[0]) {
+              template.days[0].id = freshDayId;
+              if (template.days[0].rows) {
+                template.days[0].rows.forEach(row => {
+                  row.id = 'r_' + Math.random().toString(36).substr(2, 10);
+                });
+              }
+            }
+            template.activeDayId = freshDayId;
+            
+            // Save and reload
+            localStorage.removeItem('currentCloudFile');
+            localStorage.removeItem('currentCloudProvider');
+            localStorage.setItem('shootScheduler_v8_10', JSON.stringify(template));
+            try {
+              localStorage.removeItem('shootScheduler_v8_10_UNDO');
+              localStorage.removeItem('shootScheduler_v8_10_REDO');
+            } catch(_) { }
+            location.reload();
+          })
+          .catch(err => {
+            console.error('Failed to load sample schedule:', err);
+            alert('Could not load sample schedule');
+          });
       });
       
       document.getElementById('openLocal').addEventListener('click', () => {
