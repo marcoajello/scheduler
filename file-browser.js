@@ -338,6 +338,74 @@ const FileBrowser = (function() {
   }
 
   // ---------------------------------------------------------------------------
+  // CONFIRM DIALOG (styled to match file browser)
+  // ---------------------------------------------------------------------------
+  
+  function showConfirmDialog(title, message, options) {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.className = 'fb-modal fb-modal-visible';
+      
+      const buttonsHtml = options.map((opt, i) => {
+        let btnClass = 'fb-btn';
+        if (opt.value === 'cancel') {
+          btnClass += ' fb-btn-ghost';
+        } else if (i === 0) {
+          btnClass += ' fb-btn-primary';
+        } else {
+          btnClass += ' fb-btn-secondary';
+        }
+        return `<button class="${btnClass}" data-value="${opt.value}">${opt.label}</button>`;
+      }).join('');
+      
+      modal.innerHTML = `
+        <div class="fb-modal-content fb-modal-confirm">
+          <div class="fb-header">
+            <h2 class="fb-title">${title}</h2>
+            <button class="fb-close" aria-label="Close">&times;</button>
+          </div>
+          <div class="fb-confirm-body">
+            <p class="fb-confirm-message">${message}</p>
+          </div>
+          <div class="fb-footer">
+            ${buttonsHtml}
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      const cleanup = (value) => {
+        modal.classList.remove('fb-modal-visible');
+        setTimeout(() => modal.remove(), 150);
+        resolve(value);
+      };
+      
+      // Close button
+      modal.querySelector('.fb-close').onclick = () => cleanup('cancel');
+      
+      // Option buttons
+      modal.querySelectorAll('.fb-footer button').forEach(btn => {
+        btn.onclick = () => cleanup(btn.dataset.value);
+      });
+      
+      // Background click
+      modal.onclick = (e) => {
+        if (e.target === modal) cleanup('cancel');
+      };
+      
+      // ESC key
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          document.removeEventListener('keydown', escHandler);
+          cleanup('cancel');
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // TOAST NOTIFICATIONS
   // ---------------------------------------------------------------------------
   
@@ -874,6 +942,7 @@ const FileBrowser = (function() {
     // Dialogs
     showOpenDialog,
     showSaveDialog,
+    showConfirmDialog,
     hideDialog,
     
     // Direct file operations
