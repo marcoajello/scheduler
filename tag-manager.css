@@ -713,24 +713,23 @@ body[data-live-mode="true"] .alert-tach-toggle {
 /* Production Tachometer */
 .production-tach {
   position: fixed;
-  bottom: calc(100vh - var(--dashboard-top, 546px) - 310px + 10px); /* Position at dashboard top minus tach height, plus 10px up */
-  right: 24px; /* Match dashboard right position */
-  width: 315px; /* Match dashboard width */
-  height: 310px; /* Taller to accommodate gauge */
-  background: transparent; /* Transparent so corners show through */
+  bottom: 46px; /* Deployed position */
+  right: 24px;
+  width: 315px;
+  height: 310px;
+  background: transparent;
   padding: 0;
-  transform: translateY(300px); /* Start hidden - move down 300px (10px less than full height) */
-  visibility: hidden; /* Completely hidden on page load */
-  opacity: 0; /* Also hide with opacity for extra safety */
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, bottom 0.3s ease;
-  overflow: visible; /* Allow gauge to be visible */
+  transform: translateY(290px); /* Parked: behind dashboard */
+  visibility: hidden;
+  overflow: visible;
   pointer-events: none;
-  z-index: 9997; /* Below dashboard (9999) so it hides behind */
+  z-index: 9997;
 }
 
 .production-tach.initialized {
-  visibility: visible; /* Allow visibility once initialized */
-  opacity: 1; /* Make visible */
+  visibility: visible;
+  /* Transition here so it works for BOTH slide up AND slide down */
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .production-tach.visible {
@@ -750,9 +749,14 @@ body[data-live-mode="true"] .alert-tach-toggle {
 
 .tach-gauge svg {
   display: block;
-  width: 100%; /* Scale to full container width (315px) */
+  width: 100%;
   height: auto;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3)); /* Add shadow to gauge */
+  filter: none; /* No shadow when parked */
+  transition: filter 0.3s ease;
+}
+
+.production-tach.visible .tach-gauge svg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3)); /* Shadow only when deployed */
 }
 
 #tach-needle {
@@ -765,9 +769,9 @@ body[data-live-mode="true"] .alert-tach-toggle {
   content: '';
   position: absolute;
   top: 210px; /* Align with bottom tangent of scaled gauge */
-  left: 6px; /* Inset 6px from left */
-  right: 6px; /* Inset 6px from right */
-  bottom: 0; /* Align with bottom of container - don't extend below */
+  left: 6px;
+  right: 6px;
+  bottom: 0; /* Align with bottom of container */
   background: #1a1a1a;
   border-top: 2px solid #4a4a4a;
   z-index: -1;
