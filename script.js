@@ -1485,6 +1485,7 @@ try{const __ps=readState(); if(__ps.print&&__ps.print.useDesigner){ writeState({
     // Default schedule template with pre-formatted headers and starter row
     // Cache for the default schedule template loaded from JSON
     let _defaultScheduleCache = null;
+    let _templateLoadPromise = null;
     
     // Load default schedule from JSON file (async, with sync fallback)
     async function loadDefaultScheduleFromFile() {
@@ -1497,10 +1498,14 @@ try{const __ps=readState(); if(__ps.print&&__ps.print.useDesigner){ writeState({
       } catch (e) {
         console.warn('[Template] Could not load default_schedule.json:', e);
       }
+      return _defaultScheduleCache;
     }
     
-    // Start loading immediately
-    loadDefaultScheduleFromFile();
+    // Start loading immediately, store promise
+    _templateLoadPromise = loadDefaultScheduleFromFile();
+    
+    // Expose promise for initial load
+    window._waitForTemplate = () => _templateLoadPromise;
     
     function getDefaultScheduleTemplate() {
       // Generate fresh IDs
@@ -11669,7 +11674,22 @@ function addRowResizeGrips(){
       }
     }
 
-    rebuildUI();
+    // Check if we need to load template first (empty localStorage)
+    const initialState = readState();
+    const needsTemplate = !initialState.days || initialState.days.length === 0;
+    
+    if (needsTemplate && window._waitForTemplate) {
+      // Wait for template to load, then initialize with it
+      window._waitForTemplate().then(() => {
+        const template = window.getDefaultScheduleTemplate();
+        if (template) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(template));
+        }
+        rebuildUI();
+      });
+    } else {
+      rebuildUI();
+    }
     window.addEventListener('beforeunload', persist);
   }catch(err){ showErr(err); }
 
