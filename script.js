@@ -12934,9 +12934,14 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
   const fileNew = document.getElementById('fileNew');
   if (fileNew) {
     fileNew.addEventListener('click', async () => {
-      const currentFile = window.FileBrowser ? window.FileBrowser.getCurrentFile() : null;
+      if (!window.FileBrowser) {
+        alert('File browser not loaded');
+        return;
+      }
       
-      const choice = await showThreeOptionDialog(
+      const currentFile = window.FileBrowser.getCurrentFile();
+      
+      const choice = await window.FileBrowser.showConfirmDialog(
         'New Schedule',
         'What would you like to do with the current schedule?',
         [
@@ -13038,9 +13043,14 @@ document.getElementById('printColConfirm')?.addEventListener('click', async () =
   const fileClose = document.getElementById('fileClose');
   if (fileClose) {
     fileClose.addEventListener('click', async () => {
-      const currentFile = window.FileBrowser ? window.FileBrowser.getCurrentFile() : null;
+      if (!window.FileBrowser) {
+        alert('File browser not loaded');
+        return;
+      }
       
-      const choice = await showThreeOptionDialog(
+      const currentFile = window.FileBrowser.getCurrentFile();
+      
+      const choice = await window.FileBrowser.showConfirmDialog(
         'Close Schedule',
         'What would you like to do with the current schedule?',
         [
