@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start Guide - Scheduler</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #1f2937;
+      background: #f9fafb;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 48px;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+    .subtitle {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 32px;
+    }
+    h2 {
+      font-size: 20px;
+      margin: 32px 0 16px 0;
+      color: #374151;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    h3 {
+      font-size: 16px;
+      margin: 20px 0 8px 0;
+      color: #4b5563;
+    }
+    p { margin-bottom: 12px; }
+    ul, ol {
+      margin: 12px 0 12px 24px;
+    }
+    li { margin-bottom: 8px; }
+    .tip {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 12px 16px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .tip strong { color: #1d4ed8; }
+    .shortcut {
+      display: inline-block;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 32px;
+      padding: 12px 24px;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .back-link:hover { background: #2563eb; }
+    .section { margin-bottom: 32px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-event { background: #3b82f6; color: white; }
+    .badge-call { background: #8b5cf6; color: white; }
+    .badge-sub { background: #10b981; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Quick Start Guide</h1>
+    <p class="subtitle">Get up and running with Scheduler in minutes</p>
+
+    <div class="section">
+      <h2>1. Understanding the Interface</h2>
+      <p>Scheduler is a professional shoot scheduling tool designed for commercial productions. The main interface consists of:</p>
+      <ul>
+        <li><strong>Header Bar</strong> — Title, version, date, and day information</li>
+        <li><strong>File Menu</strong> — NEW, OPEN, SAVE, SAVE AS, CLOSE</li>
+        <li><strong>Column Manager</strong> — Add, hide, and configure columns</li>
+        <li><strong>Tag Manager</strong> — Create reusable tags for cast, props, etc.</li>
+        <li><strong>Schedule Table</strong> — Your main working area</li>
+        <li><strong>FAB Button (+)</strong> — Quick add events, calls, and sub-schedules</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>2. Row Types</h2>
+      <p>There are four types of rows you can add:</p>
+      
+      <h3><span class="badge badge-event">EVENT</span> Standard Events</h3>
+      <p>The main building blocks of your schedule. Each event has a duration and the timeline calculates automatically.</p>
+      
+      <h3><span class="badge badge-call">CALL TIME</span> Call Times</h3>
+      <p>Time-anchored milestones like "Crew Call 8:00 AM". These can be anchored to the schedule start or to specific events.</p>
+      
+      <h3><span class="badge badge-sub">SUB-SCHEDULE</span> Sub-Schedules</h3>
+      <p>Nested containers for grouped activities. Great for scenes with multiple shots or complex setups.</p>
+      
+      <h3>Separators</h3>
+      <p>Visual dividers to organize your schedule into sections (e.g., "MORNING", "AFTER LUNCH").</p>
+    </div>
+
+    <div class="section">
+      <h2>3. Adding Content</h2>
+      <ol>
+        <li>Click the <strong>+ button</strong> (bottom right) to add rows</li>
+        <li>Click in any cell to edit text</li>
+        <li>Drag images directly into MEDIA columns</li>
+        <li>Type in TAG columns to create or select tags</li>
+      </ol>
+      
+      <div class="tip">
+        <strong>Tip:</strong> Drag the row handle (≡) to reorder events. Hold <span class="shortcut">Shift</span> or <span class="shortcut">Cmd</span> to multi-select rows.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>4. Formatting</h2>
+      <p>Select cells or rows, then use the formatting tools:</p>
+      <ul>
+        <li><strong>A button</strong> — Font, size, color, alignment</li>
+        <li><strong>⊞ button</strong> — Cell borders</li>
+        <li><strong>Row colors</strong> — Click the color dots on selected rows</li>
+      </ul>
+      
+      <div class="tip">
+        <strong>Tip:</strong> <span class="shortcut">Option+Click</span> on a header cell to select the entire column for formatting.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>5. Column Management</h2>
+      <p>Open <strong>Column Manager</strong> to:</p>
+      <ul>
+        <li>Add custom columns (Text, Media, Tags, Separator)</li>
+        <li>Rename column labels</li>
+        <li>Toggle visibility (Show column)</li>
+        <li>Control print output (Print column)</li>
+        <li>Drag to reorder columns</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. Tags & Cast</h2>
+      <p>Tags help you track who and what is needed for each event:</p>
+      <ol>
+        <li>Open <strong>Tag Manager</strong></li>
+        <li>Click <strong>+ Add Tag</strong></li>
+        <li>Give it a name and optionally add a headshot image</li>
+        <li>Set rules (Hard Out time, Max Hours, Meal Break)</li>
+        <li>Type the tag name in any Tags column to apply it</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>7. Time Calculations</h2>
+      <p>The schedule automatically calculates times based on:</p>
+      <ul>
+        <li><strong>Schedule Start</strong> — Set in the header (e.g., 8:00 AM)</li>
+        <li><strong>Duration</strong> — Each event's length in minutes</li>
+        <li><strong>Anchoring</strong> — Events can anchor to others for dependent timing</li>
+      </ul>
+      <p>Toggle between 12h and 24h time formats using the clock icon.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Printing & PDF</h2>
+      <p>Click <strong>Print</strong> to access print options:</p>
+      <ul>
+        <li>Choose paper size and orientation</li>
+        <li>Select which columns to include</li>
+        <li>Toggle headers and title section</li>
+        <li>Generate PDF via Puppeteer or use native print (<span class="shortcut">Cmd+P</span>)</li>
+      </ul>
+      
+      <div class="tip">
+        <strong>Tip:</strong> Native print (<span class="shortcut">Cmd+P</span>) respects your Column Manager print settings and uses your current image size for WYSIWYG output.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>9. Multi-Day Schedules</h2>
+      <p>For shoots spanning multiple days:</p>
+      <ol>
+        <li>Click <strong>+ Add Day</strong> in the FAB menu</li>
+        <li>Choose to duplicate or start fresh</li>
+        <li>Switch between days using the tab bar</li>
+        <li>Each day has independent events but shares columns and tags</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>10. Saving Your Work</h2>
+      <ul>
+        <li><strong>Local</strong> — Auto-saves to browser storage</li>
+        <li><strong>Cloud</strong> — Sign in to sync across devices</li>
+        <li><strong>Export</strong> — Save as JSON file for backup or sharing</li>
+      </ul>
+      
+      <div class="tip">
+        <strong>Tip:</strong> Use <strong>SAVE AS</strong> to create named versions of your schedule.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Keyboard Shortcuts</h2>
+      <ul>
+        <li><span class="shortcut">Cmd+Z</span> — Undo</li>
+        <li><span class="shortcut">Cmd+Shift+Z</span> — Redo</li>
+        <li><span class="shortcut">Cmd+P</span> — Native Print</li>
+        <li><span class="shortcut">Shift+Click</span> — Range select rows</li>
+        <li><span class="shortcut">Cmd+Click</span> — Multi-select rows</li>
+        <li><span class="shortcut">Option+Click</span> — Select header/column</li>
+        <li><span class="shortcut">Delete</span> — Delete selected rows</li>
+      </ul>
+    </div>
+
+    <a href="index.html" class="back-link">← Back to Scheduler</a>
+  </div>
+</body>
+</html>

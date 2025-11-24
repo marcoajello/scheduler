@@ -1,0 +1,452 @@
+/* ============================================
+   PRINT STYLES FOR SCHEDULER - V3
+   Professional output with proper sizing
+   ============================================ */
+
+@media print {
+  /* ==================== PAGE SETUP ==================== */
+  @page {
+    margin: 0.4in;
+  }
+  
+  /* Force colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+    font-size: 10pt !important;
+  }
+  
+  /* ==================== HIDE ALL UI ==================== */
+  header .header-top,
+  header .palette,
+  header .colpanel,
+  #tagPanel,
+  .tagpanel,
+  .day-tabs-bar,
+  .controls,
+  footer,
+  .fab-container,
+  .error-tray,
+  button,
+  .row-actions,
+  .cell-actions,
+  .dragHandle,
+  .miniBtn,
+  .bgBtn,
+  .fgBtn,
+  .delBtn,
+  .upBtn,
+  .downBtn,
+  .uploadBtn,
+  .color-picker-trigger,
+  svg,
+  .icon,
+  select option:not(:checked),
+  #pageWidthGuides,
+  .page-guide,
+  .sharpie,
+  .master-sharpie-toggle,
+  td.actions,
+  th[data-key="actions"] {
+    display: none !important;
+  }
+  
+  /* ==================== TITLE SECTION ==================== */
+  header .meta {
+    display: block !important;
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 0 8px 0 !important;
+    margin: 0 0 8px 0 !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Hide input fields */
+  .meta .compact-meta {
+    display: none !important;
+  }
+  
+  /* Show display */
+  .meta .meta-display-row {
+    display: block !important;
+  }
+  
+  .meta #metaDisplay {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    color: #000 !important;
+    margin: 0 0 8px 0 !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* ==================== TABLE CONTAINER ==================== */
+  .container {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .schedule-scroll {
+    background: none !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+  
+  main {
+    display: block !important;
+    background: none !important;
+    background-color: transparent !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  /* ==================== TABLE STRUCTURE ==================== */
+  #scheduleTable {
+    display: table !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    table-layout: fixed !important;
+    border: none !important;
+    width: 100% !important;
+    background: white !important;
+  }
+  
+  #scheduleTable thead {
+    display: table-header-group !important;
+  }
+  
+  #scheduleTable tbody {
+    display: table-row-group !important;
+  }
+  
+  /* ==================== TABLE HEADERS ==================== */
+  /* NO forced borders - BorderDesigner controls all borders */
+  #scheduleTable thead th {
+    box-sizing: border-box !important;
+  }
+  
+  /* Explicit column alignments for print */
+  #scheduleTable thead th[data-key="start"],
+  #scheduleTable tbody td[data-key="start"] {
+    text-align: right !important;
+  }
+  
+  #scheduleTable thead th[data-key="end"],
+  #scheduleTable tbody td[data-key="end"] {
+    text-align: left !important;
+  }
+  
+  #scheduleTable thead th[data-key="idx"],
+  #scheduleTable thead th[data-key="duration"],
+  #scheduleTable thead th[data-key="type"],
+  #scheduleTable tbody td[data-key="idx"],
+  #scheduleTable tbody td[data-key="duration"],
+  #scheduleTable tbody td[data-key="type"] {
+    text-align: center !important;
+  }
+  
+  /* Hide action columns */
+  thead th[data-key="drag"],
+  thead th[data-key="actions"],
+  tbody td[data-key="drag"],
+  tbody td[data-key="actions"],
+  colgroup col[data-key="drag"],
+  colgroup col[data-key="actions"] {
+    display: none !important;
+  }
+  
+  /* Hide columns marked for print exclusion */
+  .col-print-hide {
+    display: none !important;
+  }
+  
+  /* Ensure first visible column (idx) gets left border if set */
+  thead th[data-key="idx"][data-border-left],
+  tbody td[data-key="idx"][data-border-left] {
+    border-left: attr(data-border-left) !important;
+  }
+  
+  /* Force left border on idx if it has borderLeft dataset */
+  #scheduleTable thead th[data-key="idx"],
+  #scheduleTable tbody td[data-key="idx"] {
+    /* Will be set via inline style by beforePrint */
+  }
+  
+  /* ==================== TABLE ROWS ==================== */
+  #scheduleTable tbody tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+  
+  /* NO forced borders - BorderDesigner controls all borders */
+  #scheduleTable tbody td {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    min-height: 12pt !important;
+  }
+  
+  /* Preserve cell text alignments - inherit from inline styles */
+  #scheduleTable tbody td .cc-input,
+  #scheduleTable tbody td .cell-wrapper,
+  #scheduleTable tbody td [contenteditable] {
+    text-align: inherit !important;
+  }
+  
+  /* Respect data-align attribute on cells */
+  #scheduleTable tbody td[data-align="left"],
+  #scheduleTable tbody td[data-align="left"] .cc-input,
+  #scheduleTable tbody td[data-align="left"] [contenteditable] {
+    text-align: left !important;
+  }
+  
+  #scheduleTable tbody td[data-align="center"],
+  #scheduleTable tbody td[data-align="center"] .cc-input,
+  #scheduleTable tbody td[data-align="center"] [contenteditable] {
+    text-align: center !important;
+  }
+  
+  #scheduleTable tbody td[data-align="right"],
+  #scheduleTable tbody td[data-align="right"] .cc-input,
+  #scheduleTable tbody td[data-align="right"] [contenteditable] {
+    text-align: right !important;
+  }
+  
+  /* Respect vertical alignment */
+  #scheduleTable tbody td[data-valign="top"] {
+    vertical-align: top !important;
+  }
+  
+  #scheduleTable tbody td[data-valign="middle"] {
+    vertical-align: middle !important;
+  }
+  
+  #scheduleTable tbody td[data-valign="bottom"] {
+    vertical-align: bottom !important;
+  }
+  
+  /* Respect alignment for tag pills and media grids */
+  #scheduleTable tbody td[data-align="left"] .tags-pills,
+  #scheduleTable tbody td[data-align="left"] .u-grid {
+    justify-content: flex-start !important;
+  }
+  
+  #scheduleTable tbody td[data-align="center"] .tags-pills,
+  #scheduleTable tbody td[data-align="center"] .u-grid {
+    justify-content: center !important;
+  }
+  
+  #scheduleTable tbody td[data-align="right"] .tags-pills,
+  #scheduleTable tbody td[data-align="right"] .u-grid {
+    justify-content: flex-end !important;
+  }
+  
+  /* Regular rows: TDs inherit background from TR */
+  #scheduleTable tbody tr:not(.separator-row) td {
+    background-color: inherit !important;
+  }
+  
+  /* Separator rows: use inline styles set by JS */
+  #scheduleTable tbody tr.separator-row {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  #scheduleTable tbody tr.separator-row .separator-span-cell {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  #scheduleTable tbody tr.separator-row .separator-text {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Make inputs transparent to inherit cell backgrounds */
+  #scheduleTable tbody td input.offset,
+  #scheduleTable tbody td input.duration,
+  #scheduleTable tbody td input.subDur,
+  #scheduleTable tbody td input.subOffset {
+    background: transparent !important;
+    border: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Keep sub-rows with parents */
+  #scheduleTable tr.subheader,
+  #scheduleTable tr.subchild {
+    page-break-before: avoid !important;
+  }
+  
+  /* ==================== COLUMN WIDTHS ==================== */
+  /* Column widths are set dynamically in the HTML based on UI widths and scale factor */
+  
+  /* ==================== SEPARATOR COLUMN STYLING ==================== */
+  td[data-type="separator"],
+  th[data-type="separator"] {
+    padding: 6pt 0 !important;
+    font-size: 5pt !important;
+    color: #666 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    text-decoration: none !important;
+    line-height: 1 !important;
+  }
+  
+  /* Ensure separator content is clean */
+  td[data-type="separator"]::before,
+  td[data-type="separator"]::after,
+  th[data-type="separator"]::before,
+  th[data-type="separator"]::after {
+    content: none !important;
+    display: none !important;
+  }
+  
+  /* Kill any text underlines */
+  td[data-type="separator"],
+  td[data-type="separator"] *,
+  th[data-type="separator"],
+  th[data-type="separator"] * {
+    text-decoration: none !important;
+    -webkit-text-decoration: none !important;
+  }
+  
+  /* ==================== IMAGES / MEDIA ==================== */
+  /* Print image size can be controlled via --print-image-height CSS variable */
+  :root {
+    --print-image-height: 50pt;
+  }
+  
+  .uploadBox {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .uploadBox .u-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 2pt !important;
+    padding: 2pt !important;
+  }
+  
+  .uploadBox .u-item {
+    flex: 0 0 auto !important;
+  }
+  
+  .uploadBox .u-thumb {
+    max-width: 150px !important;
+    max-height: var(--print-image-height, 50pt) !important;
+    height: auto !important;
+    width: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    border: 0.5pt solid #ccc !important;
+    border-radius: 2pt !important;
+  }
+  
+  /* Override any body.media-* and force-row-height rules from styles.css */
+  body.media-s .uploadBox .u-thumb,
+  body.media-m .uploadBox .u-thumb,
+  body.media-l .uploadBox .u-thumb,
+  body.force-row-height .uploadBox .u-thumb,
+  body .uploadBox .u-thumb {
+    max-height: var(--print-image-height, 50pt) !important;
+    height: auto !important;
+    width: auto !important;
+  }
+  
+  /* Hide delete buttons and other UI in print */
+  .uploadBox .u-del,
+  .uploadBox .u-add,
+  .uploadBox .u-add-overlay,
+  .uploadBox .u-add-button {
+    display: none !important;
+  }
+  
+  /* Legacy .cell-media support */
+  .cell-media {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 2pt !important;
+  }
+  
+  .cell-media img {
+    max-height: var(--print-image-height, 50pt) !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+    border: 0.5pt solid #ccc !important;
+  }
+  
+  /* ==================== TEXT CLEANUP ==================== */
+  * {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+  }
+  
+  /* Remove animations */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  /* ==================== FINAL OVERRIDES ==================== */
+  /* Force transparent backgrounds on all wrappers */
+  #mainApp,
+  .container,
+  .schedule-scroll,
+  main,
+  header,
+  section {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Force left border on first visible column */
+  #scheduleTable thead th[data-key="idx"],
+  #scheduleTable tbody td[data-key="idx"] {
+    border-left-style: solid !important;
+    border-left-width: 2px !important;
+    border-left-color: #000000 !important;
+  }
+  
+  /* Also catch any cell with explicit borderLeft dataset */
+  #scheduleTable th[data-border-left],
+  #scheduleTable td[data-border-left] {
+    border-left-style: solid !important;
+  }
+}
+
+/* ============================================
+   END PRINT STYLES
+   ============================================ */

@@ -1,0 +1,82 @@
+/* Time format toggle switch - loads last to override all other styles */
+.time-format-toggle {
+  display: inline-block !important;
+  position: relative !important;
+}
+
+.time-format-toggle input[type="checkbox"],
+#timeFormatToggle {
+  position: absolute !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.time-format-label {
+  display: flex !important;
+  background: var(--bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.2s ease !important;
+  height: 26px !important;
+  min-width: 70px !important;
+}
+
+.time-format-label:hover {
+  border-color: var(--accent) !important;
+}
+
+.time-format-label::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 50% !important;
+  height: 100% !important;
+  background: var(--accent) !important;
+  border-radius: 5px !important;
+  transition: transform 0.2s ease !important;
+  z-index: 0 !important;
+}
+
+#timeFormatToggle:checked ~ .time-format-label::before {
+  transform: translateX(100%) !important;
+}
+
+.time-format-label .option {
+  flex: 1 !important;
+  padding: 4px 10px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  transition: color 0.2s ease !important;
+  position: relative !important;
+  z-index: 1 !important;
+  text-align: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#timeFormatToggle:not(:checked) ~ .time-format-label .option:first-child {
+  color: white !important;
+}
+
+#timeFormatToggle:not(:checked) ~ .time-format-label .option:last-child {
+  color: var(--muted) !important;
+}
+
+#timeFormatToggle:checked ~ .time-format-label .option:first-child {
+  color: var(--muted) !important;
+}
+
+#timeFormatToggle:checked ~ .time-format-label .option:last-child {
+  color: white !important;
+}

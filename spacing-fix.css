@@ -1,0 +1,76 @@
+/* NUCLEAR SPACING FIX - Overrides everything */
+
+/* All sections in header get same padding and margin - more left padding */
+header .meta.card,
+.day-tabs-bar,
+.controls {
+  padding: 10px 10px 10px 12px !important;  /* top right bottom left - matches meta card vertical padding */
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+/* Details elements inside metaSection get custom spacing only when open */
+header details.card[open] {
+  padding: 10px 10px 10px 12px !important;
+}
+
+/* No padding when closed to allow proper vertical centering */
+header details.card:not([open]) {
+  padding: 0 !important;
+}
+
+/* HEADER DESIGNER is inserted INSIDE metaSection - add 10px gap above it */
+#metaSection .header-designer-panel {
+  margin-top: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+/* Only add padding when header designer is open */
+#metaSection .header-designer-panel[open] {
+  padding: 10px 10px 10px 12px !important;
+}
+
+/* Reduce corner radius on HEADER DESIGNER, COLUMN MANAGER, and TAG MANAGER to match inputs (8px) */
+.header-designer-panel,
+#colPanel,
+#tagPanel {
+  border-radius: 8px !important;
+}
+
+/* Title section input fields - all same height */
+.meta.card input[type="text"],
+.meta.card input[type="date"],
+.meta.card input[type="number"] {
+  height: 32px !important;
+  padding: 4px 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* Spacing between sections - 12px gaps */
+#metaSection #colPanel,
+#metaSection #tagPanel {
+  margin-top: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+/* First detail (Header Designer) gets 12px top margin */
+#metaSection details:first-of-type {
+  margin-top: 12px !important;
+}
+
+/* Last detail (Tag Manager) gets smaller bottom margin */
+#metaSection #tagPanel {
+  margin-bottom: 4px !important;
+}
+
+/* Make DAY buttons 15% smaller */
+.day-tab {
+  padding: 8px 14px !important;
+  font-size: 12px !important;
+  gap: 7px !important;
+}
+
+/* Even spacing between all title fields */
+.meta .row.compact-meta {
+  gap: 8px !important;
+}

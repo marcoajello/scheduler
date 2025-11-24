@@ -1,0 +1,413 @@
+{
+  "colW": {
+    "drag": 60,
+    "dash": 6,
+    "duration": 75,
+    "actions": 90,
+    "c_tags": 143,
+    "idx": 42,
+    "start": 75,
+    "end": 75,
+    "type": 75,
+    "c_text": 147,
+    "c_uploads": 129
+  },
+  "days": [
+    {
+      "id": "day-1763994486251-q3qhhpe2c",
+      "dayNumber": 1,
+      "date": "",
+      "dow": "",
+      "scheduleStart": "8:00 AM",
+      "rows": [
+        {
+          "id": "r_v2pb8zumkm",
+          "type": "EVENT",
+          "title": "",
+          "duration": 30,
+          "offset": 0,
+          "anchorMode": "start",
+          "anchorId": "",
+          "callTimeDisplay": "end",
+          "subColor": "",
+          "subFg": "",
+          "rowBg": "",
+          "rowFg": "",
+          "fontFamily": "",
+          "fontSize": "",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "completed": false,
+          "completedAt": null,
+          "mealWrapType": "",
+          "custom": {
+            "c_text": {
+              "value": "",
+              "formatting": {
+                "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+                "fontSize": "10px",
+                "bold": false,
+                "italic": false,
+                "underline": false,
+                "align": "left",
+                "fgColor": "",
+                "bgColor": ""
+              }
+            },
+            "c_uploads": [],
+            "c_tags": ""
+          },
+          "cellFormatting": {
+            "idx": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "center",
+              "valign": "middle",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000",
+              "borderLeft": "2px solid #000000"
+            },
+            "start": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "c_kn0gje": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "end": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "duration": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "type": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "c_text": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "c_uploads": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            },
+            "c_tags": {
+              "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+              "fontSize": "10px",
+              "bold": false,
+              "italic": false,
+              "underline": false,
+              "align": "",
+              "valign": "",
+              "fgColor": "",
+              "bgColor": "",
+              "borderTop": "2px solid #000000",
+              "borderRight": "2px solid #000000",
+              "borderBottom": "2px solid #000000"
+            }
+          }
+        }
+      ],
+      "palette": [
+        "#243041",
+        "#2f2a41",
+        "#41322a",
+        "#2a4132",
+        "#2a3541",
+        "#5aa0ff",
+        "#ff8a5a",
+        "#5affc1",
+        "#d1c9ff",
+        "#ffd166"
+      ],
+      "cols": [
+        {
+          "id": "c_gfzxgy",
+          "key": "c_text",
+          "label": "TEXT",
+          "type": "text",
+          "show": true,
+          "print": true
+        },
+        {
+          "id": "c_z9sqhu",
+          "key": "c_uploads",
+          "label": "MEDIA",
+          "type": "upload",
+          "show": true,
+          "print": true
+        },
+        {
+          "id": "c_q5a4r5",
+          "key": "c_tags",
+          "label": "TAGS",
+          "type": "tags",
+          "show": true,
+          "print": true
+        }
+      ],
+      "headerFormatting": {
+        "idx": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "center",
+          "valign": "middle",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000",
+          "borderLeft": "2px solid #000000"
+        },
+        "start": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "c_kn0gje": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "end": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "duration": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "type": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "c_text": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "c_uploads": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        },
+        "c_tags": {
+          "fontFamily": "'Avenir', 'Century Gothic', sans-serif",
+          "fontSize": "12px",
+          "bold": false,
+          "italic": false,
+          "underline": false,
+          "align": "",
+          "valign": "",
+          "fgColor": "",
+          "bgColor": "#d6d6d6",
+          "borderTop": "2px solid #000000",
+          "borderRight": "2px solid #000000",
+          "borderBottom": "2px solid #000000"
+        }
+      }
+    }
+  ],
+  "projectMeta": {
+    "title": "",
+    "version": ""
+  },
+  "activeDayId": "day-1763994486251-q3qhhpe2c",
+  "cols": [
+    {
+      "id": "c_gfzxgy",
+      "key": "c_text",
+      "label": "TEXT",
+      "type": "text",
+      "show": true,
+      "print": true
+    },
+    {
+      "id": "c_z9sqhu",
+      "key": "c_uploads",
+      "label": "MEDIA",
+      "type": "upload",
+      "show": true,
+      "print": true
+    },
+    {
+      "id": "c_q5a4r5",
+      "key": "c_tags",
+      "label": "TAGS",
+      "type": "tags",
+      "show": true,
+      "print": true
+    },
+    {
+      "id": "c_5daqg7",
+      "key": "c_kn0gje",
+      "label": "-",
+      "type": "separator",
+      "show": true,
+      "print": true,
+      "separatorChar": "-"
+    }
+  ],
+  "columnOrder": [
+    "drag",
+    "idx",
+    "start",
+    "c_kn0gje",
+    "end",
+    "duration",
+    "type",
+    "title",
+    "c_text",
+    "c_uploads",
+    "c_tags",
+    "actions"
+  ]
+}

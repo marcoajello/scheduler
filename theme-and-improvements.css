@@ -1,0 +1,410 @@
+/* Theme Toggle and Light Theme Styles */
+
+/* Light theme color variables */
+body.light-theme {
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --muted: #4a5568;
+  --text: #1a202c;
+  --accent: #3182ce;
+  --row: #ffffff;
+  --rowAlt: #f7fafc;
+  --border: #e2e8f0;
+  --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+body.light-theme {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Light theme adjustments for various elements */
+body.light-theme .card {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+body.light-theme input,
+body.light-theme textarea,
+body.light-theme select {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body.light-theme thead th {
+  background: #f7fafc;
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+
+body.light-theme tbody tr {
+  background: var(--row-bg, var(--row));
+}
+
+/* body.light-theme tbody tr:nth-child(even) {
+  background: var(--row-bg, var(--rowAlt));
+} */ /* Disabled - no alternating colors */
+
+body.light-theme tbody tr.subheader {
+  background: var(--sub-bg, #e2e8f0) !important;
+}
+
+body.light-theme tbody tr.subchild {
+  background: var(--subchild-bg, #f7fafc) !important;
+}
+
+body.light-theme .meta input {
+  background: #ffffff;
+}
+
+body.light-theme button.ghost {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+body.light-theme .badge {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+body.light-theme .tag-pill {
+  background: #edf2f7;
+  color: #2d3748;
+  border-color: var(--border);
+}
+
+body.light-theme .uploadBox {
+  background: #f7fafc;
+}
+
+/* Fix light theme backgrounds for panels */
+body.light-theme .colpanel,
+body.light-theme .printpanel,
+body.light-theme .palette,
+body.light-theme details {
+  background: var(--panel);
+}
+
+body.light-theme .col-wrap,
+body.light-theme .pal-wrap,
+body.light-theme .print-grid {
+  background: var(--panel);
+}
+
+body.light-theme .col-list {
+  background: #f7fafc;
+}
+
+/* Fix column manager row backgrounds and inputs */
+body.light-theme .colRow {
+  background: #f7fafc !important;
+  border-color: var(--border);
+}
+
+body.light-theme .colRow input,
+body.light-theme .colRow select {
+  background: #ffffff !important;
+  color: #1a202c !important;
+  border-color: var(--border);
+}
+
+/* Fix print settings grid backgrounds */
+body.light-theme .print-grid {
+  background: transparent !important;
+}
+
+body.light-theme .print-grid label {
+  background: transparent !important;
+}
+
+body.light-theme .print-field-picker {
+  background: var(--panel);
+  border-color: var(--border);
+}
+
+body.light-theme .field-picker-item {
+  background: #f7fafc;
+  border-color: var(--border);
+}
+
+body.light-theme .field-picker-item:hover {
+  background: #edf2f7;
+}
+
+/* Fix ALL text to be dark/black by default in light theme */
+body.light-theme {
+  color: #1a202c;
+}
+
+/* Default text colors for most elements */
+body.light-theme h1,
+body.light-theme h2,
+body.light-theme h3,
+body.light-theme label,
+body.light-theme summary,
+body.light-theme .muted,
+body.light-theme small {
+  color: #1a202c;
+}
+
+/* But allow rows with custom colors to override */
+body.light-theme tbody tr {
+  color: var(--row-fg, #1a202c) !important;
+}
+
+body.light-theme tbody tr.subheader {
+  color: var(--sub-fg, #1a202c) !important;
+}
+
+body.light-theme tbody tr.subchild {
+  color: var(--subchild-fg, #1a202c) !important;
+}
+
+/* Table cells inherit row color, but NOT form elements (they stay white) */
+body.light-theme tbody tr td {
+  color: inherit !important;
+}
+
+/* Non-table inputs and form elements */
+body.light-theme .meta input,
+body.light-theme .controls input,
+body.light-theme .controls select,
+body.light-theme .controls textarea,
+body.light-theme .col-list input {
+  color: #1a202c !important;
+}
+
+/* Fix Upload buttons - remove white rectangles */
+body.light-theme .uploadBox {
+  background: transparent !important;
+}
+
+body.light-theme td[data-key="upload"],
+body.light-theme .uploadBox .u-actions {
+  background: transparent !important;
+}
+
+/* Fix event/type badges and dropdowns */
+body.light-theme .badge {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+body.light-theme select[id*="type"] {
+  background: #f7fafc !important;
+  color: #1a202c !important;
+  border-color: var(--border);
+}
+
+/* Fix all buttons in table cells */
+body.light-theme tbody td button {
+  background: var(--accent);
+  color: white;
+}
+
+body.light-theme tbody td button.ghost {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--border);
+}
+
+body.light-theme tbody tr.subheader select {
+  color: #1a202c !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e0 !important;
+}
+
+body.light-theme tbody tr.subchild select {
+  color: #1a202c !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e0 !important;
+}
+  color: #a0aec0 !important;
+  opacity: 1;
+}
+
+body.light-theme select option {
+  color: #1a202c;
+  background: #ffffff;
+}
+
+body.light-theme .muted,
+body.light-theme small.muted {
+  color: #718096 !important;
+}
+
+/* Fix button text - blue styling all around */
+body.light-theme button {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+body.light-theme button.ghost {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+body.light-theme button:hover {
+  filter: brightness(1.1);
+  opacity: 0.95;
+}
+
+/* Column format button exception - white background */
+body.light-theme thead th .formatBtn {
+  background: white !important;
+  color: var(--accent) !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+/* Action buttons exception - white background */
+body.light-theme td.actions button {
+  background: white !important;
+  color: var(--accent) !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+body.light-theme .loadBtn {
+  color: white;
+  background: var(--accent);
+}
+
+/* Ensure proper contrast for headers */
+body.light-theme thead th {
+  color: #1a202c !important;
+}
+
+body.light-theme summary {
+  color: #1a202c;
+}
+
+/* Header top with theme toggle */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.header-top h1 {
+  margin: 0;
+}
+
+.theme-toggle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  filter: brightness(1.1);
+  opacity: 0.95;
+}
+
+.theme-text {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+
+/* Print header section */
+.print-header-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.print-header-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.print-header-section textarea {
+  width: 100%;
+  min-height: 50px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.print-header-section button {
+  margin-top: 8px;
+  align-self: flex-start;
+}
+
+.print-header-section small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Print-specific header styles */
+@media print {
+  .print-header {
+    width: 100%;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-sizing: border-box;
+  }
+  
+  .print-header-text {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  /* Match header width to table */
+  .meta {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Page break control */
+  tbody tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  tbody tr.row {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  /* Keep sub-schedules together if possible */
+  tr.subheader {
+    page-break-before: auto;
+    page-break-after: avoid;
+    break-before: auto;
+    break-after: avoid;
+  }
+  
+  tr.subchild {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Sharpie marker icon - simple and clean -->
+  
+  <!-- Marker body (main rectangle) -->
+  <rect x="8" y="6" width="8" height="13" rx="1" fill="currentColor"/>
+  
+  <!-- Cap (top rectangle with rounded top) -->
+  <rect x="8" y="2" width="8" height="5" rx="1" fill="currentColor" opacity="0.9"/>
+  
+  <!-- Chisel tip (angled bottom) -->
+  <path d="M 8 19 L 10 22 L 14 22 L 16 19 Z" fill="currentColor"/>
+  
+  <!-- Highlight line (gives it dimension) -->
+  <rect x="14.5" y="7" width="0.5" height="10" fill="white" opacity="0.3"/>
+</svg>

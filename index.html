@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scheduler</title>
+  <link rel="stylesheet" href="./styles.css?v=20251121040000" />
+  <link rel="stylesheet" href="./theme-and-improvements.css" />
+  <link rel="stylesheet" href="./header-designer.css" />
+  <link rel="stylesheet" href="./border-designer.css?v=20251115073000" />
+  <link rel="stylesheet" href="./format-designer.css?v=20251115073000" />
+  <link rel="stylesheet" href="./tag-manager.css" />
+  <link rel="stylesheet" href="./print-styles.css" />
+  <link rel="stylesheet" href="./spacing-fix.css" />
+  <link rel="stylesheet" href="./time-toggle.css?v=20251116075000" />
+  
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <!-- Auth UI (shown when not logged in) -->
+  <div id="authUI" style="display: none; position: fixed; inset: 0; background: #f9fafb; z-index: 10000; align-items: center; justify-content: center; flex-direction: column; gap: 20px;">
+    <div style="background: white; padding: 32px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 400px; width: 90%;">
+      <h2 style="margin: 0 0 24px 0; text-align: center; color: #1f2937;">Scheduler</h2>
+      
+      <div id="authError" style="display: none; padding: 12px; background: #fee; border: 1px solid #fcc; border-radius: 4px; margin-bottom: 16px; color: #c00; font-size: 14px;"></div>
+      <div id="authSuccess" style="display: none; padding: 12px; background: #d1fae5; border: 1px solid #86efac; border-radius: 4px; margin-bottom: 16px; color: #065f46; font-size: 14px;"></div>
+      
+      <div id="authForm">
+        <input id="authEmail" type="email" placeholder="Email" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
+        <input id="authPassword" type="password" placeholder="Password" style="width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px;" />
+        <input id="authPasswordConfirm" type="password" placeholder="Confirm Password" style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #d1d5db; border-radius: 4px; background: white; color: #1f2937; font-size: 14px; display: none;" />
+        
+        <div style="display: flex; gap: 8px;">
+          <button id="signInBtn" style="flex: 1; padding: 6px 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Sign In</button>
+          <button id="signUpBtn" class="ghost">Sign Up</button>
+        </div>
+        
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <button id="useLocallyBtn" class="ghost" style="width: 100%;">Use Locally (No Account)</button>
+          <p style="margin-top: 12px; font-size: 11px; color: #6b7280;">
+            Works offline, saves to this device only. No media uploads.
+          </p>
+        </div>
+        
+        <p style="margin-top: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+          Sign in to sync schedules and media across devices
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main App (shown when logged in) -->
+  <div id="mainApp">
+  <div id="errorTray" class="error-tray" style="display:none"></div>
+  <header class="container">
+    <div class="header-top">
+      <h1>SCHEDULER</h1>
+      <div style="display: flex; gap: 12px; align-items: center; padding-right: 24px;">
+        <span id="headerFileDisplay" style="font-size: 12px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;"></span>
+        <span id="authStatus" style="font-size: 12px; color: var(--muted); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; display: none; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;"></span>
+        <button id="signOutBtn" class="ghost" style="display: none;">Sign Out</button>
+        <a href="quickstart.html" target="_blank" class="help-btn">HELP</a>
+        <button id="themeToggle" class="ghost theme-toggle" title="Toggle light/dark theme">
+          <span class="theme-text">LIGHT</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- File Menu Bar -->
+    <div class="file-menu-bar">
+      <button id="fileNew" class="file-menu-btn" title="Create new schedule">NEW</button>
+      <button id="fileOpen" class="file-menu-btn" title="Open existing schedule">OPEN</button>
+      <button id="fileSave" class="file-menu-btn" title="Save current schedule">SAVE</button>
+      <button id="fileSaveAs" class="file-menu-btn" title="Save as new file">SAVE AS</button>
+      <button id="fileClose" class="file-menu-btn" title="Close current schedule">CLOSE</button>
+    </div>
+
+    <section class="meta card" id="metaSection">
+      <div class="meta-content-wrapper">
+        <div class="meta-fields">
+          <div class="row compact-meta">
+            <span class="title-label-left">TITLE</span>
+            <label class="title-field-only">
+              <input id="metaTitle" type="text" placeholder="Project Title">
+            </label>
+            <label>
+              VER
+              <input id="metaVersion" type="text" placeholder="1.0">
+            </label>
+            <label>
+              DAY
+              <input id="metaDow" type="text" placeholder="Monday" readonly>
+            </label>
+            <label>
+              DATE
+              <input id="metaDate" type="date">
+            </label>
+            <label>
+              DAY
+              <input id="metaX" type="number" min="1" step="1" placeholder="1" readonly>
+            </label>
+            <label>
+              OF
+              <input id="metaY" type="number" min="1" step="1" placeholder="1" readonly>
+            </label>
+          </div>
+          <div class="meta-display-row">
+            <div id="metaDisplay" class="metaDisplay">—</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- HEADER DESIGNER will be inserted here by header-designer.js -->
+      
+      <!-- COLUMN MANAGER -->
+      <details id="colPanel" class="card colpanel">
+        <summary>Column Manager</summary>
+        <div class="col-wrap">
+          <div class="col-table-container">
+            <table class="col-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Type</th>
+                  <th>Show</th>
+                  <th>Print</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="colList"></tbody>
+            </table>
+          </div>
+          <div class="col-actions">
+            <button id="colAdd">+ Add Column</button>
+            <button id="colReset" class="ghost">Reset to Defaults</button>
+          </div>
+        </div>
+      </details>
+      
+      <!-- TAG MANAGER -->
+      <details id="tagPanel" class="card tagpanel">
+        <summary>Tag Manager</summary>
+        <div class="col-wrap">
+          <div class="col-actions" style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+            <button id="addTagBtn" class="tm-btn">+ Add Tag</button>
+            <button id="exportTagReport" class="tm-btn ghost">Export Report</button>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 9px;">
+              <label for="tagImageSize" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">Tag Size:</label>
+              <input type="range" id="tagImageSize" min="8" max="60" value="20" step="2" style="width: 120px; height: 4px;">
+              <span id="tagImageSizeValue" style="min-width: 30px; text-align: right; font-weight: 600;">20px</span>
+            </div>
+          </div>
+          <div id="tagManagerList" class="tag-manager-list"></div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Hidden buttons for file operations (triggered by file menu) -->
+    <div style="display: none;">
+      <input id="currentFileName" type="text" />
+      <span id="fileProviderLabel"></span>
+      <button id="saveJsonBtn"></button>
+      <button id="loadJsonBtn"></button>
+      <button id="saveToCloudBtnMgr"></button>
+      <button id="loadFromCloudBtnMgr"></button>
+      <button id="saveToDropboxBtnMgr"></button>
+      <button id="resetBtn"></button>
+    </div>
+
+    <details id="palettePanel" class="card palette" style="display: none;">
+      <summary>Global Color Palette</summary>
+      <div class="pal-wrap">
+        <div id="palChips" class="chips"></div>
+        <div class="pal-actions">
+          <label class="addcolor">
+            Add
+            <input id="palAdd" type="color" value="#5aa0ff">
+          </label>
+          <button id="palReset" class="ghost">Reset Defaults</button>
+          <button id="palSave" class="">Save Palette</button>
+        </div>
+        <small class="muted">Use per-row 🎨 (background) and <span class="fgA">A</span> (font) to color any row. “Inherit” resets to default / parent.</small>
+      </div>
+    </details>
+
+    <!-- Day Tabs Bar -->
+    <div class="day-tabs-bar" id="dayTabsBar">
+      <div class="day-tabs" id="dayTabs">
+        <!-- Tabs will be dynamically added here -->
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="controls">
+      <label style="font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; white-space: nowrap;">
+        Schedule Start (Call Time):
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <input id="scheduleStart" type="text" pattern="[0-9]{1,2}:[0-9]{2}( [AP]M)?" placeholder="8:00 AM" value="8:00 AM" maxlength="8" style="width: 90px;">
+          <div class="time-format-toggle">
+            <input type="checkbox" id="timeFormatToggle" class="time-format-checkbox">
+            <label for="timeFormatToggle" class="time-format-label">
+              <span class="option">12h</span>
+              <span class="option">24h</span>
+            </label>
+          </div>
+        </div>
+      </label>
+      <button id="undoBtn" class="ghost compact">Undo</button>
+      <button id="redoBtn" class="ghost compact">Redo</button>
+      <div class="grow"></div>
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">Zoom:</span>
+        <select id="zoomControl" style="padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);">
+          <option value="0.5">50%</option>
+          <option value="0.67">67%</option>
+          <option value="0.75">75%</option>
+          <option value="1" selected>100%</option>
+          <option value="1.25">125%</option>
+          <option value="1.5">150%</option>
+          <option value="2">200%</option>
+        </select>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">Image Height:</span>
+        <input id="imageHeightControl" type="number" min="30" max="300" value="80" step="10" style="width: 60px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text);">
+        <span style="font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">px</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="forceRowHeight" style="width: 17px; height: 17px; cursor: pointer;">
+        <span style="font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px;">Force Row</span>
+      </label>
+      <button id="printBtn" class="compact">Print</button>
+    </div>
+    
+    <!-- Print Settings Modal -->
+    <div id="printColModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <div style="background: white; padding: 24px; border-radius: 8px; max-width: 600px; max-height: 85vh; overflow-y: auto;">
+        <h3 style="margin-top: 0; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">PRINT / REPORTS</h3>
+        
+        <!-- Report Type Selector -->
+        <div style="margin-bottom: 20px; padding: 12px; background: #e8f4fc; border-radius: 4px; border: 1px solid #bde0fe;">
+          <div style="font-weight: 600; margin-bottom: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">OUTPUT TYPE:</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; background: white; border-radius: 4px; border: 1px solid #ccc;">
+              <input type="radio" name="reportType" value="full" checked style="width: 14px; height: 14px;">
+              <span style="font-size: 12px;">Full Schedule</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; background: white; border-radius: 4px; border: 1px solid #ccc;">
+              <input type="radio" name="reportType" value="master" style="width: 14px; height: 14px;">
+              <span style="font-size: 12px;">Master Only</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; background: white; border-radius: 4px; border: 1px solid #ccc;">
+              <input type="radio" name="reportType" value="subschedule" style="width: 14px; height: 14px;">
+              <span style="font-size: 12px;">Sub-Schedule</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 10px; background: white; border-radius: 4px; border: 1px solid #ccc;">
+              <input type="radio" name="reportType" value="tags" style="width: 14px; height: 14px;">
+              <span style="font-size: 12px;">Tag Report</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Tag Selector (shown when type=tags) -->
+        <div id="tagSelectorSection" style="display: none; margin-bottom: 20px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">SELECT TAGS:</div>
+          <div id="reportTagList" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+            <div style="color: #999; font-size: 12px; padding: 12px; text-align: center;">No tags found.</div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd;">
+            <div>
+              <div style="font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">VIEW:</div>
+              <div style="display: flex; gap: 8px;">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 6px 12px; background: white; border: 1px solid #ccc; border-radius: 4px;">
+                  <input type="radio" name="tagViewMode" value="digest" checked style="margin: 0;">
+                  <span style="font-size: 12px;">Digest</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 6px 12px; background: white; border: 1px solid #ccc; border-radius: 4px;">
+                  <input type="radio" name="tagViewMode" value="schedule" style="margin: 0;">
+                  <span style="font-size: 12px;">Schedule</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sub-Schedule Selector (shown when type=subschedule) -->
+        <div id="subscheduleSection" style="display: none; margin-bottom: 20px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          <div style="font-weight: 600; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">SELECT SUB-SCHEDULE:</div>
+          <select id="subscheduleSelect" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">-- Select a sub-schedule --</option>
+          </select>
+        </div>
+        
+        <!-- Standard Print Settings (hidden for tag reports) -->
+        <div id="standardPrintSettings">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <div style="padding: 12px; background: #f5f5f5; border-radius: 4px;">
+              <label style="display: block; margin-bottom: 8px;">
+                <span style="font-weight: 600;">PAPER SIZE:</span>
+                <select id="pdfPaperSize" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 4px;">
+                  <option value="letter">Letter (8.5" × 11")</option>
+                  <option value="legal">Legal (8.5" × 14")</option>
+                  <option value="tabloid">Tabloid (11" × 17")</option>
+                  <option value="a4">A4 (210mm × 297mm)</option>
+                  <option value="a3">A3 (297mm × 420mm)</option>
+                </select>
+              </label>
+            </div>
+            
+            <div style="padding: 12px; background: #f5f5f5; border-radius: 4px;">
+              <label style="display: block; margin-bottom: 8px;">
+                <span style="font-weight: 600;">ORIENTATION:</span>
+                <select id="pdfOrientation" style="width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; margin-top: 4px;">
+                  <option value="landscape" selected>Landscape</option>
+                  <option value="portrait">Portrait</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 20px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+            <label style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 600;">IMAGE HEIGHT:</span>
+              <input id="pdfImageHeight" type="number" min="50" max="500" step="10" value="150" style="width: 80px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+              <span style="color: #666; font-size: 12px;">px</span>
+            </label>
+          </div>
+          
+          <div style="margin-bottom: 20px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+            <label style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 600;">COLUMN WIDTH FACTOR:</span>
+              <input id="pdfColumnWidthFactor" type="number" min="0.1" max="1.0" step="0.05" value="0.5" style="width: 80px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+              <span style="color: #666; font-size: 12px;">0.1-1.0</span>
+            </label>
+          </div>
+          
+          <div style="margin-bottom: 20px; padding: 12px; background: #f5f5f5; border-radius: 4px; display: flex; flex-direction: column; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pdfShowHeader" checked>
+              <span style="font-weight: 600;">SHOW TITLE SECTION</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pdfShowColumnHeaders" checked>
+              <span style="font-weight: 600;">SHOW COLUMN HEADERS</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pdfRoundedCorners">
+              <span style="font-weight: 600;">ROUNDED CORNERS</span>
+            </label>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+          <button id="printColCancel" class="ghost">CANCEL</button>
+          <button id="printColConfirm">PRINT</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Project Browser Modal -->
+    <!-- Simple File Browser -->
+    <div id="fileBrowser" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center;">
+      <div style="background: #fff; border-radius: 12px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+        
+        <!-- Header -->
+        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">Open Schedule from Cloud</h3>
+          <button id="closeFileBrowser" class="close-btn">×</button>
+        </div>
+        
+        <!-- File List -->
+        <div id="fileList" style="flex: 1; overflow-y: auto; padding: 16px;">
+          <!-- Files will be listed here -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyFileState" style="display: none; text-align: center; padding: 60px 20px; color: #6b7280;">
+          <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;">📄</div>
+          <p style="font-size: 16px; margin-bottom: 8px;">No saved schedules</p>
+          <p style="font-size: 13px;">Use "Save to Cloud" to save your first schedule</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Save to Cloud Modal -->
+    <div id="saveToCloudModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10000000; align-items: center; justify-content: center;">
+      <div style="background: #fff; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+        <h3 style="margin-top: 0; color: #111827;">Save Schedule to Cloud</h3>
+        <input id="saveFileName" type="text" placeholder="MySchedule.json" style="width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; color: #111827; font-size: 14px;" />
+        <p style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">File will be saved to your cloud storage. Existing files with the same name will be overwritten.</p>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button id="saveCancelBtn" class="ghost">Cancel</button>
+          <button id="saveConfirmBtn" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000000; align-items: center; justify-content: center;">
+      <div style="background: var(--card); padding: 24px; border-radius: 8px; max-width: 400px; width: 90%;">
+        <h3 style="margin-top: 0; color: #ef4444;">Delete Confirmation</h3>
+        <p id="deleteConfirmMessage" style="margin: 16px 0; color: var(--text);"></p>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">This action cannot be undone.</p>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button id="deleteConfirmCancel" class="ghost">Cancel</button>
+          <button id="deleteConfirmYes" class="danger">Delete</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="schedule-scroll"><table id="scheduleTable" class="schedule">
+  <colgroup id="colGroup"></colgroup>
+      <thead><tr id="headerRow"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+</div>
+
+    <!-- Page Width Guides -->
+    <div id="pageWidthGuides" class="page-width-guides">
+      <div class="page-guide portrait" title="Letter Portrait (7.7&quot; printable width)"></div>
+      <div class="page-guide landscape" title="Letter Landscape (10.2&quot; printable width)"></div>
+      <div class="page-guide legal" title="Legal (13.2&quot; printable width)"></div>
+    </div>
+  </main>
+
+  <footer class="container foot">
+  </footer>
+  </div><!-- end mainApp -->
+
+  <!-- Floating Action Button -->
+  <div class="fab-container">
+    <div class="fab-menu" id="fabMenu">
+      <button class="fab-option" id="fabAddEvent" title="Add Event">
+        <span class="fab-label">Add Event</span>
+      </button>
+      <button class="fab-option" id="fabAddCall" title="Add Call Time">
+        <span class="fab-label">Add Call Time</span>
+      </button>
+      <button class="fab-option" id="fabAddSub" title="Add Sub-schedule">
+        <span class="fab-label">Add Sub-schedule</span>
+      </button>
+      <button class="fab-option" id="fabAddSeparator" title="Add Separator">
+        <span class="fab-label">Add Separator</span>
+      </button>
+      <div class="fab-divider"></div>
+      <button class="fab-option fab-option-special" id="fabAddDay" title="Add Day">
+        <span class="fab-label">Add Day</span>
+      </button>
+    </div>
+    <button class="fab" id="fab" title="Add new item">
+      <span class="fab-icon-main">+</span>
+    </button>
+  </div>
+  
+  <!-- Alert Dashboard FAB is created dynamically by alert-system.js -->
+
+  <style id="printDynamic"></style>
+  
+  <script src="supabase-client.js"></script>
+  <script src="border-designer.js"></script>
+  <script src="format-designer.js?v=20251115073000"></script>
+  <script src="tag-manager-unified.js?v=20251117"></script>
+  <script src="alert-system.js?v=20251119"></script>
+  <script src="sharpie-manager.js"></script>
+  <script src="script.js?v=20251113142200"></script>
+  <script src="csv-exporter.js"></script>
+  <script src="header-designer.js"></script>
+  
+  <!-- Auth Handlers -->
+  <script>
+    // Initialize Supabase on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      SupabaseAPI.init();
+      
+      const authEmail = document.getElementById('authEmail');
+      const authPassword = document.getElementById('authPassword');
+      const authPasswordConfirm = document.getElementById('authPasswordConfirm');
+      const signInBtn = document.getElementById('signInBtn');
+      const signUpBtn = document.getElementById('signUpBtn');
+      const authError = document.getElementById('authError');
+      const authSuccess = document.getElementById('authSuccess');
+      const signOutBtn = document.getElementById('signOutBtn');
+      const authStatus = document.getElementById('authStatus');
+      
+      // Update auth status indicator
+      function updateAuthStatus() {
+        const user = SupabaseAPI.auth.getCurrentUser();
+        const isLocalMode = localStorage.getItem('useLocalMode') === 'true';
+        const openProjectsBtn = document.getElementById('openProjectsBtn');
+        
+        if (user) {
+          authStatus.textContent = `Signed in: ${user.email}`;
+          authStatus.style.display = 'inline-block';
+          signOutBtn.style.display = 'inline-block';
+          if (openProjectsBtn) openProjectsBtn.style.display = 'inline-block';
+        } else if (isLocalMode) {
+          authStatus.textContent = 'Local Mode';
+          authStatus.style.display = 'inline-block';
+          signOutBtn.textContent = 'Sign In';
+          signOutBtn.style.display = 'inline-block';
+          if (openProjectsBtn) openProjectsBtn.style.display = 'none';
+        } else {
+          authStatus.style.display = 'none';
+          signOutBtn.style.display = 'none';
+          if (openProjectsBtn) openProjectsBtn.style.display = 'none';
+        }
+      }
+      
+      // Listen for auth state changes
+      window.addEventListener('authStateChanged', updateAuthStatus);
+      updateAuthStatus();
+      
+      // Sign out / switch to auth
+      signOutBtn.addEventListener('click', async () => {
+        const isLocalMode = localStorage.getItem('useLocalMode') === 'true';
+        
+        if (isLocalMode) {
+          // Switch from local mode to auth
+          localStorage.removeItem('useLocalMode');
+          document.getElementById('mainApp').style.display = 'none';
+          document.getElementById('authUI').style.display = 'flex';
+        } else {
+          // Sign out
+          await SupabaseAPI.auth.signOut();
+          updateAuthStatus();
+        }
+      });
+      
+      function showAuthError(message) {
+        authError.textContent = message;
+        authError.style.display = 'block';
+        authSuccess.style.display = 'none'; // Hide success if showing error
+        setTimeout(() => {
+          authError.style.display = 'none';
+        }, 5000);
+      }
+      
+      function showAuthSuccess(message) {
+        authSuccess.textContent = message;
+        authSuccess.style.display = 'block';
+        authError.style.display = 'none'; // Hide error if showing success
+        setTimeout(() => {
+          authSuccess.style.display = 'none';
+        }, 5000);
+      }
+      
+      signInBtn.addEventListener('click', async () => {
+        authPasswordConfirm.style.display = 'none'; // Hide confirm field for sign in
+        
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        
+        if (!email || !password) {
+          showAuthError('Please enter email and password');
+          return;
+        }
+        
+        signInBtn.textContent = 'Signing in...';
+        signInBtn.disabled = true;
+        
+        const result = await SupabaseAPI.auth.signIn(email, password);
+        
+        if (!result.success) {
+          showAuthError(result.error);
+          signInBtn.textContent = 'Sign In';
+          signInBtn.disabled = false;
+        }
+      });
+      
+      signUpBtn.addEventListener('click', async () => {
+        authPasswordConfirm.style.display = 'block'; // Show confirm field for sign up
+        
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        const passwordConfirm = authPasswordConfirm.value;
+        
+        if (!email || !password) {
+          showAuthError('Please enter email and password');
+          return;
+        }
+        
+        if (password.length < 6) {
+          showAuthError('Password must be at least 6 characters');
+          return;
+        }
+        
+        if (password !== passwordConfirm) {
+          showAuthError('Passwords do not match');
+          return;
+        }
+        
+        signUpBtn.textContent = 'Creating account...';
+        signUpBtn.disabled = true;
+        
+        const result = await SupabaseAPI.auth.signUp(email, password);
+        
+        if (result.success) {
+          showAuthSuccess('Account created! Please check your email to confirm.');
+          authEmail.value = '';
+          authPassword.value = '';
+          authPasswordConfirm.value = '';
+        } else {
+          showAuthError(result.error);
+        }
+        
+        signUpBtn.textContent = 'Sign Up';
+        signUpBtn.disabled = false;
+      });
+      
+      // Allow Enter key to sign in
+      authPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          signInBtn.click();
+        }
+      });
+      
+      // Use Locally button - bypass auth
+      const useLocallyBtn = document.getElementById('useLocallyBtn');
+      useLocallyBtn.addEventListener('click', () => {
+        localStorage.setItem('useLocalMode', 'true');
+        document.getElementById('authUI').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        console.log('Running in local-only mode');
+      });
+    });
+  </script>
+  
+  <!-- Dropbox Chooser SDK -->
+  <script type="text/javascript" 
+          src="https://www.dropbox.com/static/api/2/dropins.js" 
+          id="dropboxjs" 
+          data-app-key="v0siwpdz7p0sghv"></script>
+  
+  <!-- Dropbox integration -->
+  <script src="dropbox-chooser.js"></script>
+  
+</body>
+</html>
