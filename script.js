@@ -11153,43 +11153,37 @@ function addRowResizeGrips(){
       
       if(!confirm('Reset to sample schedule? This will reset to a single day.')) return;
       
-      const rows = [
-        {id:uid(),type:'EVENT',title:'SET UP',duration:45, custom:{}},
-        {id:uid(),type:'EVENT',title:'REHEARSE',duration:30, custom:{}},
-        {id:uid(),type:'SUB', title:'Talent Prep', offset:-30, anchorMode:'eventEnd', anchorId:'', callTimeDisplay:'end', subColor:'', subFg:'', custom:{}, children:[
-          {id:uid(), title:'Hair & Makeup', duration:45, custom:{}},
-          {id:uid(), title:'Wardrobe', duration:20, custom:{}}
-        ]},
-        {id:uid(),type:'EVENT',title:'SHOOT',duration:90, custom:{}},
-        {id:uid(),type:'CALL TIME',title:'Call Time',offset:0, anchorMode:'start', anchorId:'', callTimeDisplay:'end', custom:{}},
-        {id:uid(),type:'EVENT',title:'LUNCH',duration:60, custom:{}},
-        {id:uid(),type:'EVENT',title:'SHOOT (Afternoon Block)',duration:120, custom:{}},
-        {id:uid(),type:'EVENT',title:'WRAP',duration:30, custom:{}}
-      ];
-      
-      const firstDay = {
-        id: generateDayId(),
-        dayNumber: 1,
-        date: '',
-        dow: '',
-        scheduleStart: '8:00',
-        rows,
-        palette: getPalette(),
-        cols: getCols()
-      };
-      
-      const st = readState();
-      writeState({ 
-        ...st, 
-        days: [firstDay],
-        projectMeta: { title: '', version: '' },
-        activeDayId: firstDay.id,
-        print: getPrint(), 
-        layouts: getLayouts(), 
-        activeLayoutId: getActiveLayoutId() 
-      });
-      
-      rebuildUI();
+      // Fetch from default_schedule.json
+      fetch('default_schedule.json')
+        .then(response => response.json())
+        .then(template => {
+          // Generate fresh IDs
+          const freshDayId = generateDayId();
+          if (template.days && template.days[0]) {
+            template.days[0].id = freshDayId;
+            if (template.days[0].rows) {
+              template.days[0].rows.forEach(row => {
+                row.id = uid();
+              });
+            }
+          }
+          template.activeDayId = freshDayId;
+          
+          // Merge with current print/layout settings
+          const st = readState();
+          writeState({ 
+            ...template,
+            print: getPrint(), 
+            layouts: getLayouts(), 
+            activeLayoutId: getActiveLayoutId() 
+          });
+          
+          rebuildUI();
+        })
+        .catch(err => {
+          console.error('Failed to load sample schedule:', err);
+          alert('Could not load sample schedule');
+        });
     });
 
     // Print settings
