@@ -42,6 +42,63 @@
   max-width: 400px;
 }
 
+.fb-modal-confirm {
+  max-width: 400px;
+}
+
+.fb-confirm-body {
+  padding: 20px;
+}
+
+.fb-confirm-message {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .fb-confirm-message {
+  color: #9ca3af;
+}
+
+.fb-btn-secondary {
+  background: #6b7280;
+  color: #fff;
+}
+
+.fb-btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.fb-modal-confirm {
+  max-width: 400px;
+}
+
+.fb-confirm-body {
+  padding: 20px;
+}
+
+.fb-confirm-message {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+[data-theme="dark"] .fb-confirm-message {
+  color: #9ca3af;
+}
+
+/* Secondary button style */
+.fb-btn-secondary {
+  background: #6b7280;
+  color: #fff;
+}
+
+.fb-btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+}
+
 /* Dark mode */
 [data-theme="dark"] .fb-modal-content {
   background: #1e1e1e;
