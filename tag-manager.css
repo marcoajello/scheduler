@@ -713,28 +713,31 @@ body[data-live-mode="true"] .alert-tach-toggle {
 /* Production Tachometer */
 .production-tach {
   position: fixed;
-  bottom: 46px; /* Deployed position */
+  bottom: 46px;
   right: 24px;
   width: 315px;
   height: 310px;
   background: transparent;
   padding: 0;
-  transform: translateY(290px); /* Parked: behind dashboard */
-  visibility: hidden;
-  overflow: visible;
+  transform: translateY(285px); /* Parked - the value we know works */
+  opacity: 0;
   pointer-events: none;
+  overflow: visible;
   z-index: 9997;
-}
-
-.production-tach.initialized {
-  visibility: visible;
-  /* Transition here so it works for BOTH slide up AND slide down */
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .production-tach.visible {
-  transform: translateY(0); /* Slide up to natural position above dashboard */
+  transform: translateY(50px); /* Deployed - shows tail-lights */
+  opacity: 1;
   pointer-events: auto;
+}
+
+/* Mirrored mode - flip only the colored bands, needle handles its own flip via JS */
+.production-tach.mirrored .tach-gauge svg path {
+  transform: scaleX(-1);
+  transform-origin: 120px 120px;
 }
 
 .tach-gauge {
@@ -745,6 +748,7 @@ body[data-live-mode="true"] .alert-tach-toggle {
   width: 100%;
   height: 100%;
   padding-top: 20px;
+  cursor: pointer; /* Indicate clickable for option-click */
 }
 
 .tach-gauge svg {
