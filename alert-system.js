@@ -1053,7 +1053,7 @@ const AlertDashboard = (function() {
     dashboardElement.id = 'alert-dashboard';
     dashboardElement.className = 'alert-dashboard';
     dashboardElement.innerHTML = `
-      <div id="production-tach" class="production-tach" style="visibility: hidden;">
+      <div id="production-tach" class="production-tach">
         <div class="tach-gauge">
           <svg width="240" height="240" viewBox="0 0 240 240">
             <!-- Outer circle -->
@@ -1099,7 +1099,7 @@ const AlertDashboard = (function() {
             <line x1="206.7" y1="135.3" x2="195.8" y2="133.4" stroke="#fff" stroke-width="2"/>
             
             <!-- Numbers -->
-            <text x="21.5" y="141.4" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">240</text>
+            <text x="21.5" y="141.4" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">360</text>
             <text x="20.0" y="124.0" fill="#fff" font-size="11" text-anchor="middle" >180</text>
             <text x="21.0" y="110.1" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">120</text>
             <text x="24.4" y="94.8" fill="#fff" font-size="11" text-anchor="middle" >90</text>
@@ -1120,7 +1120,7 @@ const AlertDashboard = (function() {
             <text x="215.6" y="94.8" fill="#fff" font-size="11" text-anchor="middle" >90</text>
             <text x="219.0" y="110.1" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">120</text>
             <text x="220.0" y="124.0" fill="#fff" font-size="11" text-anchor="middle" >180</text>
-            <text x="218.5" y="141.4" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">240</text>
+            <text x="218.5" y="141.4" fill="#fff" font-size="11" text-anchor="middle" font-weight="600">360</text>
             
             <!-- Needle -->
             <line id="tach-needle" x1="120" y1="120" x2="120" y2="50" stroke="#ff0000" stroke-width="3" stroke-linecap="round" transform="rotate(0 120 120)"/>
@@ -1196,15 +1196,37 @@ const AlertDashboard = (function() {
     
     document.body.appendChild(dashboardElement);
     
-    // Create and append tach as a sibling to dashboard (not a child)
+    // Create tach as sibling (not child) - extract it from dashboard HTML
     const tachElement = document.createElement('div');
     tachElement.id = 'production-tach';
-    tachElement.className = 'production-tach'; // Don't add initialized yet
-    tachElement.innerHTML = dashboardElement.querySelector('#production-tach').innerHTML;
+    tachElement.className = 'production-tach';
+    tachElement.innerHTML = document.getElementById('production-tach').innerHTML;
     document.body.appendChild(tachElement);
     
     // Remove tach from dashboard since we've moved it to body
-    dashboardElement.querySelector('#production-tach').remove();
+    document.getElementById('production-tach').remove();
+    
+    // Restore mirrored state from localStorage
+    const tachMirrored = localStorage.getItem('alertTachMirrored') === 'true';
+    if (tachMirrored) {
+      tachElement.classList.add('mirrored');
+    }
+    
+    // Option-click on tach gauge to toggle mirrored mode
+    const tachGauge = tachElement.querySelector('.tach-gauge');
+    if (tachGauge) {
+      tachGauge.addEventListener('click', (e) => {
+        if (e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          tachElement.classList.toggle('mirrored');
+          const isMirrored = tachElement.classList.contains('mirrored');
+          localStorage.setItem('alertTachMirrored', isMirrored ? 'true' : 'false');
+          // Force tach update to apply new needle direction
+          updateProductionTach();
+        }
+      });
+    }
     
     // Restore category filter state from localStorage
     const categoryFilters = JSON.parse(localStorage.getItem('alertCategoryFilters') || '{"critical": true, "warning": true, "info": true}');
@@ -1318,19 +1340,14 @@ const AlertDashboard = (function() {
     dashboardElement.classList.add('open');
     isOpen = true;
     
-    // After dashboard animation completes, make tach available (but still parked)
+    // Wait for dashboard animation to complete (1s), then restore tach if needed
     setTimeout(() => {
       const tach = document.getElementById('production-tach');
-      if (tach) {
-        tach.classList.add('initialized');
-        
-        // If tach toggle was active, show it
-        const toggleBtn = document.getElementById('alert-tach-toggle');
-        if (toggleBtn && toggleBtn.classList.contains('active')) {
-          tach.classList.add('visible');
-        }
+      const toggleBtn = document.getElementById('alert-tach-toggle');
+      if (tach && toggleBtn && toggleBtn.classList.contains('active')) {
+        tach.classList.add('visible');
       }
-    }, 1100);
+    }, 1000);
     
     runValidation();
   }
@@ -1338,26 +1355,15 @@ const AlertDashboard = (function() {
   function close() {
     console.log('[DASHBOARD DEBUG] Closing dashboard');
     
+    // Hide tach if visible
     const tach = document.getElementById('production-tach');
-    
-    if (tach && tach.classList.contains('visible')) {
-      // Tach is up - slide it down first
+    if (tach) {
       tach.classList.remove('visible');
-      
-      // Wait for slide animation, then hide and close dashboard
-      setTimeout(() => {
-        tach.classList.remove('initialized');
-        dashboardElement.classList.remove('open');
-        isOpen = false;
-      }, 500);
-    } else {
-      // Tach is parked or doesn't exist - just hide and close
-      if (tach) {
-        tach.classList.remove('initialized');
-      }
-      dashboardElement.classList.remove('open');
-      isOpen = false;
     }
+    
+    // Dashboard closes immediately - tach fades in place
+    dashboardElement.classList.remove('open');
+    isOpen = false;
   }
   
   function toggleLiveMode() {
@@ -1409,19 +1415,19 @@ const AlertDashboard = (function() {
     } else {
       alertLog('[AlertDashboard] Live mode disabled - hiding sharpie buttons, tach, and lines');
       liveBtn.classList.remove('active');
-      // Add the collapsed class to hide sharpie buttons
-      // CSS will automatically transition the actions column width
       document.body.classList.add('sharpie-buttons-collapsed');
       
-      // ALWAYS hide tach when LIVE mode is turned off (tach toggle button fades out)
+      // Hide tach when LIVE mode is turned off
+      const tach = document.getElementById('production-tach');
       if (tach) {
         tach.classList.remove('visible');
       }
+      
       if (toggleBtn) {
         toggleBtn.classList.remove('active');
       }
       
-      // Hide sharpie lines when exiting live mode (without changing localStorage preference)
+      // Hide sharpie lines when exiting live mode
       if (typeof SharpieManager !== 'undefined') {
         document.body.classList.add('sharpie-lines-hidden');
         const lineElements = document.querySelectorAll('.sharpie-line-element');
@@ -1496,7 +1502,12 @@ const AlertDashboard = (function() {
     const demoMinutes = -22.5;
     const angle = calculateTachPosition(demoMinutes);
     
-    needle.setAttribute('transform', `rotate(${angle} 120 120)`);
+    // Check if tach is mirrored
+    const tachElement = document.getElementById('production-tach');
+    const isMirrored = tachElement?.classList.contains('mirrored');
+    const finalAngle = isMirrored ? -angle : angle;
+    
+    needle.setAttribute('transform', `rotate(${finalAngle} 120 120)`);
     numberDisplay.textContent = '-23'; // Round to nearest minute
     numberDisplay.style.color = '#fff';
     
@@ -1522,12 +1533,12 @@ const AlertDashboard = (function() {
    *  90 min =  75.2°
    * 120 min =  84.3°
    * 180 min =  92.3°
-   * 240 min = 102.3°
+   * 360 min = 102.3°
    * Negative values mirror to the left (negative angles)
    */
   function calculateTachPosition(minutes) {
     // Clamp to gauge range
-    const clamped = Math.max(-240, Math.min(240, minutes));
+    const clamped = Math.max(-360, Math.min(360, minutes));
     
     const sign = clamped >= 0 ? 1 : -1;
     const abs = Math.abs(clamped);
@@ -1544,7 +1555,7 @@ const AlertDashboard = (function() {
       { min: 90, angle: 75.2 },
       { min: 120, angle: 84.3 },
       { min: 180, angle: 92.3 },
-      { min: 240, angle: 102.3 }
+      { min: 360, angle: 102.3 }
     ];
     
     // Find the two points to interpolate between
@@ -1673,21 +1684,17 @@ const AlertDashboard = (function() {
       return;
     }
     
-    // Scan entire schedule for specific milestone events
-    const milestoneRows = document.querySelectorAll('#scheduleTable tbody tr:not(.sub-row)');
+    // Scan entire schedule for specific milestone events (reuse allRows from above)
     let cameraWrapRow = null;
     let tailLightsRow = null;
     
-    milestoneRows.forEach(row => {
-      // Check the TYPE column cell for matching text
-      const typeCell = row.querySelector('td[data-key="type"]');
-      if (typeCell) {
-        const typeText = typeCell.textContent.trim().toUpperCase();
-        if (typeText.includes('CAMERA') && typeText.includes('WRAP')) {
-          cameraWrapRow = row; // Keep last occurrence
-        } else if (typeText.includes('TAIL') && typeText.includes('LIGHT')) {
-          tailLightsRow = row; // Keep last occurrence
-        }
+    allRows.forEach(row => {
+      // Check the data-mealWrapType attribute
+      const mealWrapType = (row.dataset.mealWrapType || '').toLowerCase();
+      if (mealWrapType === 'camera wrap') {
+        cameraWrapRow = row; // Keep last occurrence
+      } else if (mealWrapType === 'tail-lights') {
+        tailLightsRow = row; // Keep last occurrence
       }
     });
     
@@ -1761,8 +1768,13 @@ const AlertDashboard = (function() {
     console.log('[NEEDLE DEBUG] Calculated angle:', angle, 'degrees');
     console.log('[NEEDLE DEBUG] diffMinutes:', diffMinutes);
     
+    // Check if tach is mirrored - if so, negate the angle
+    const tachElement = document.getElementById('production-tach');
+    const isMirrored = tachElement?.classList.contains('mirrored');
+    const finalAngle = isMirrored ? -angle : angle;
+    
     // Use SVG transform attribute (not CSS style) - specify rotation center as (120 120)
-    needle.setAttribute('transform', `rotate(${angle} 120 120)`);
+    needle.setAttribute('transform', `rotate(${finalAngle} 120 120)`);
     console.log('[NEEDLE DEBUG] Needle transform set:', needle.getAttribute('transform'));
     alertLog('[Tach] Needle transform set to:', needle.getAttribute('transform'));
     
